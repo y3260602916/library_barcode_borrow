@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.libraryborrowbackend.mapper.ScanRecordMapper">
+
+  <!-- 结果映射 -->
+  <resultMap id="BaseResultMap" type="com.campus.libraryborrowbackend.entity.ScanRecord">
+    <id column="scan_id" jdbcType="INTEGER" property="scanId" />
+    <result column="img_path" jdbcType="VARCHAR" property="imgPath" />
+    <result column="scan_barcode" jdbcType="VARCHAR" property="scanBarcode" />
+    <result column="scan_time" jdbcType="TIMESTAMP" property="scanTime" />
+    <result column="result" jdbcType="VARCHAR" property="result" />
+  </resultMap>
+
+  <!-- 基础字段列表 -->
+  <sql id="Base_Column_List">
+    scan_id, img_path, scan_barcode, scan_time, result
+  </sql>
+
+  <!-- Example 动态 Where 子句 -->
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+
+  <!-- Example Update 动态 Where 子句 -->
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+
+  <!-- ==================== CRUD 方法 ==================== -->
+
+  <select id="selectByExample" parameterType="com.campus.libraryborrowbackend.entity.ScanRecordExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">distinct</if>
+    <include refid="Base_Column_List" />
+    from scan_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from scan_record
+    where scan_id = #{scanId,jdbcType=INTEGER}
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from scan_record
+    where scan_id = #{scanId,jdbcType=INTEGER}
+  </delete>
+
+  <delete id="deleteByExample" parameterType="com.campus.libraryborrowbackend.entity.ScanRecordExample">
+    delete from scan_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+
+  <insert id="insert" parameterType="com.campus.libraryborrowbackend.entity.ScanRecord">
+    insert into scan_record (scan_id, img_path, scan_barcode, scan_time, result)
+    values (#{scanId,jdbcType=INTEGER}, #{imgPath,jdbcType=VARCHAR}, #{scanBarcode,jdbcType=VARCHAR},
+            #{scanTime,jdbcType=TIMESTAMP}, #{result,jdbcType=VARCHAR})
+  </insert>
+
+  <insert id="insertSelective" parameterType="com.campus.libraryborrowbackend.entity.ScanRecord">
+    insert into scan_record
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="scanId != null">scan_id,</if>
+      <if test="imgPath != null">img_path,</if>
+      <if test="scanBarcode != null">scan_barcode,</if>
+      <if test="scanTime != null">scan_time,</if>
+      <if test="result != null">result,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="scanId != null">#{scanId,jdbcType=INTEGER},</if>
+      <if test="imgPath != null">#{imgPath,jdbcType=VARCHAR},</if>
+      <if test="scanBarcode != null">#{scanBarcode,jdbcType=VARCHAR},</if>
+      <if test="scanTime != null">#{scanTime,jdbcType=TIMESTAMP},</if>
+      <if test="result != null">#{result,jdbcType=VARCHAR},</if>
+    </trim>
+  </insert>
+
+  <select id="countByExample" parameterType="com.campus.libraryborrowbackend.entity.ScanRecordExample" resultType="java.lang.Long">
+    select count(*) from scan_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+
+  <update id="updateByExampleSelective" parameterType="map">
+    update scan_record
+    <set>
+      <if test="row.scanId != null">scan_id = #{row.scanId,jdbcType=INTEGER},</if>
+      <if test="row.imgPath != null">img_path = #{row.imgPath,jdbcType=VARCHAR},</if>
+      <if test="row.scanBarcode != null">scan_barcode = #{row.scanBarcode,jdbcType=VARCHAR},</if>
+      <if test="row.scanTime != null">scan_time = #{row.scanTime,jdbcType=TIMESTAMP},</if>
+      <if test="row.result != null">result = #{row.result,jdbcType=VARCHAR},</if>
+    </set>
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+
+  <update id="updateByExample" parameterType="map">
+    update scan_record
+    set scan_id = #{row.scanId,jdbcType=INTEGER},
+    img_path = #{row.imgPath,jdbcType=VARCHAR},
+    scan_barcode = #{row.scanBarcode,jdbcType=VARCHAR},
+    scan_time = #{row.scanTime,jdbcType=TIMESTAMP},
+    result = #{row.result,jdbcType=VARCHAR}
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.campus.libraryborrowbackend.entity.ScanRecord">
+    update scan_record
+    <set>
+      <if test="imgPath != null">img_path = #{imgPath,jdbcType=VARCHAR},</if>
+      <if test="scanBarcode != null">scan_barcode = #{scanBarcode,jdbcType=VARCHAR},</if>
+      <if test="scanTime != null">scan_time = #{scanTime,jdbcType=TIMESTAMP},</if>
+      <if test="result != null">result = #{result,jdbcType=VARCHAR},</if>
+    </set>
+    where scan_id = #{scanId,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="com.campus.libraryborrowbackend.entity.ScanRecord">
+    update scan_record
+    set img_path = #{imgPath,jdbcType=VARCHAR},
+        scan_barcode = #{scanBarcode,jdbcType=VARCHAR},
+        scan_time = #{scanTime,jdbcType=TIMESTAMP},
+        result = #{result,jdbcType=VARCHAR}
+    where scan_id = #{scanId,jdbcType=INTEGER}
+  </update>
+
+</mapper>
