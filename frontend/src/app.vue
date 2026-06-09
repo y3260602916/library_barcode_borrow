@@ -1,92 +1,76 @@
 <template>
-  <el-container style="height: 100vh">
-    <el-header style="text-align:center;font-size:24px;padding:20px">
-      校园图书馆智能管理系统
-      <el-button @click="openVoice" style="margin-left:20px">🎤 语音助手</el-button>
-    </el-header>
+  <div>
+    <!-- 未登录：显示登录页 -->
+    <Login v-if="!isLogin" />
 
-    <el-container>
-      <el-main>
-        <BarcodeOcr @get-barcode="fillBarcode" />
-        <el-divider />
+    <!-- 已登录：主页面 -->
+    <div v-else class="main">
+      <!-- 顶部导航栏 -->
+      <div class="top-bar">
+        <span>
+          当前登录：{{ userInfo.userName }}
+          ｜
+          身份：{{ userInfo.userType === 0 ? '师生' : '管理员' }}
+        </span>
+        <el-button type="text" @click="logout">退出登录</el-button>
+      </div>
 
-        <el-card title="图书借阅 / 归还" style="margin-bottom:20px">
-          <el-row :gutter="20">
-            <el-col :span="8">
-              <el-input v-model="userId" placeholder="用户ID"></el-input>
-            </el-col>
-            <el-col :span="8">
-              <el-input v-model="bookBarcode" placeholder="图书条码"></el-input>
-            </el-col>
-            <el-col :span="8">
-              <el-button type="success" @click="borrowBook">借阅</el-button>
-              <el-button type="warning" @click="returnBook">归还</el-button>
-            </el-col>
-          </el-row>
-        </el-card>
-
-        <DataChart />
-      </el-main>
-    </el-container>
-  </el-container>
+      <!-- 功能区域：扫码识别 + 个人借阅记录 -->
+      <div style="padding: 20px;">
+        <!-- 条码识别借阅 -->
+        <BarcodeOcr />
+        <!-- 个人借阅记录（还书入口） -->
+        <BorrowRecord />
+        <!-- 数据图表 -->
+        <DataChart style="margin-top: 20px;" />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, getCurrentInstance } from 'vue'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+// 引入所有组件
+import Login from './Login.vue'
 import BarcodeOcr from './components/BarcodeOcr.vue'
+import BorrowRecord from './components/BorrowRecord.vue' // 新增借阅记录组件
 import DataChart from './components/DataChart.vue'
-import { voiceSpeak, voiceRecognition } from './utils/voice'
 
-const { proxy } = getCurrentInstance()
-const userId = ref('')
-const bookBarcode = ref('')
+// 登录状态 & 用户信息
+const isLogin = ref(false)
+const userInfo = ref({})
 
-const fillBarcode = (code) => {
-  bookBarcode.value = code
-}
+// 读取本地登录信息
+onMounted(() => {
+  let user = localStorage.getItem('userInfo')
+  if (user) {
+    isLogin.value = true
+    userInfo.value = JSON.parse(user)
+  }
+})
 
-const openVoice = async () => {
-  try {
-    const text = await voiceRecognition()
-    voiceSpeak(`已识别指令：${text}`)
-  } catch (err) {
-    proxy.$message.error(err)
-  }
-}
-
-const borrowBook = async () => {
-  if (!userId.value || !bookBarcode.value) {
-    proxy.$message.warning('请填写用户ID和图书条码')
-    return
-  }
-  try {
-    await proxy.$axios.post('/borrow/add', null, {
-      params: {
-        userId: userId.value,
-        bookBarcode: bookBarcode.value
-      }
-    })
-    proxy.$message.success('借阅成功')
-    voiceSpeak('借阅成功')
-  } catch (e) {
-    proxy.$message.error('借阅失败')
-    voiceSpeak('借阅失败，请检查信息')
-  }
-}
-
-const returnBook = async () => {
-  if (!userId.value) {
-    proxy.$message.warning('请输入记录ID')
-    return
-  }
-  try {
-    await proxy.$axios.put('/borrow/return', null, {
-      params: { recordId: userId.value }
-    })
-    proxy.$message.success('归还成功')
-    voiceSpeak('归还成功')
-  } catch (e) {
-    proxy.$message.error('归还失败')
-  }
+// 退出登录
+const logout = () => {
+  localStorage.removeItem('userInfo')
+  isLogin.value = false
+  userInfo.value = {}
+  ElMessage.success('已退出登录')
 }
 </script>
+
+<style scoped>
+.top-bar {
+  height: 60px;
+  line-height: 60px;
+  padding: 0 30px;
+  background: #fff;
+  box-shadow: 0 1px 4px #ccc;
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+}
+.main {
+  width: 100%;
+}
+</style>

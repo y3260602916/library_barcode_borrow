@@ -8,10 +8,7 @@ import com.campus.libraryborrowbackend.mapper.ScanRecordMapper;
 import com.campus.libraryborrowbackend.util.PythonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -109,6 +106,22 @@ public class BarcodeController {
             return Result.error("未找到条码为 " + barcode + " 的图书信息");
         }
 
+        return Result.success(book);
+    }
+
+    /**
+     * 新增：根据条码查询图书信息
+     * 接口地址：GET /barcode/book?barcode=xxx
+     */
+    @GetMapping("/book")
+    public Result<Book> getBookByBarcode(@RequestParam String barcode) {
+        if (barcode == null || barcode.trim().isEmpty()) {
+            return Result.error("图书条码不能为空");
+        }
+        Book book = bookMapper.selectBookByBarcode(barcode.trim());
+        if (book == null) {
+            return Result.error("未找到该条码对应的图书");
+        }
         return Result.success(book);
     }
 }
