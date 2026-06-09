@@ -1,5 +1,37 @@
-# 前端依赖，绝对不能提交
-frontend/node_modules/
-frontend/package-lock.json
-frontend/dist/
-frontend/.vite/
+# 后端配置文件
+application*.yml
+application*.yaml
+application*.properties
+*.env
+
+# 后端上传图片目录
+backend/*/upload/
+
+# 临时配置目录
+backend/*/config/
+
+# 前端环境配置
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 前端依赖、打包产物
+node_modules/
+dist/
+build/
+
+# IDE 配置
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# 日志
+*.log
+logs/
+
+# 系统文件
+.DS_Store
+Thumbs.db
