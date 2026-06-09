@@ -35,3 +35,7 @@ logs/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# Vite 运行缓存
+frontend/.vite/
+.vite/
