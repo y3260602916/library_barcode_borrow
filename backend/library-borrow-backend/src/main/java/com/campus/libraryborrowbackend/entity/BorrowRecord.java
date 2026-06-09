@@ -1,5 +1,6 @@
 package com.campus.libraryborrowbackend.entity;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class BorrowRecord {
@@ -14,6 +15,8 @@ public class BorrowRecord {
     private Date returnTime;
 
     private Byte isOverdue;
+
+    private BigDecimal fineMoney;
 
     public Integer getRecordId() {
         return recordId;
@@ -61,5 +64,13 @@ public class BorrowRecord {
 
     public void setIsOverdue(Byte isOverdue) {
         this.isOverdue = isOverdue;
+    }
+
+    public BigDecimal getFineMoney() {
+        return fineMoney;
+    }
+
+    public void setFineMoney(BigDecimal fineMoney) {
+        this.fineMoney = fineMoney;
     }
 }
