@@ -15,14 +15,22 @@
         <el-button type="text" @click="logout">退出登录</el-button>
       </div>
 
-      <!-- 功能区域：扫码识别 + 个人借阅记录 -->
       <div style="padding: 20px;">
-        <!-- 条码识别借阅 -->
-        <BarcodeOcr />
-        <!-- 个人借阅记录（还书入口） -->
-        <BorrowRecord />
-        <!-- 数据图表 -->
-        <DataChart style="margin-top: 20px;" />
+        <!-- 标签页切换所有功能模块 -->
+        <el-tabs v-model="activeTab" type="card">
+          <el-tab-pane label="自助借还" name="ocr">
+            <BarcodeOcr />
+          </el-tab-pane>
+          <el-tab-pane label="图书列表" name="bookList">
+            <BookList />
+          </el-tab-pane>
+          <el-tab-pane label="我的借阅记录" name="borrow">
+            <BorrowRecord />
+          </el-tab-pane>
+          <el-tab-pane label="数据统计" name="chart">
+            <DataChart />
+          </el-tab-pane>
+        </el-tabs>
       </div>
     </div>
   </div>
@@ -34,12 +42,15 @@ import { ElMessage } from 'element-plus'
 // 引入所有组件
 import Login from './Login.vue'
 import BarcodeOcr from './components/BarcodeOcr.vue'
-import BorrowRecord from './components/BorrowRecord.vue' // 新增借阅记录组件
+import BorrowRecord from './components/BorrowRecord.vue'
 import DataChart from './components/DataChart.vue'
+import BookList from './components/BookList.vue'
 
 // 登录状态 & 用户信息
 const isLogin = ref(false)
 const userInfo = ref({})
+// 标签页激活项
+const activeTab = ref('ocr')
 
 // 读取本地登录信息
 onMounted(() => {
