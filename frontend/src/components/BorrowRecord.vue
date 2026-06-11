@@ -1,11 +1,9 @@
 <template>
   <el-card shadow="hover" title="📖 我的借阅记录" style="margin-top: 20px">
-    <!-- 刷新按钮 -->
     <div style="margin-bottom: 16px;">
       <el-button type="primary" icon="Refresh" @click="getBorrowList">刷新记录</el-button>
     </div>
 
-    <!-- 借阅记录表格 -->
     <el-table
       :data="borrowList"
       border
@@ -31,11 +29,10 @@
       <el-table-column label="逾期罚款(元)" prop="fineMoney" width="120" align="center" />
       <el-table-column label="操作" width="120" align="center">
         <template #default="{ row }">
-          <!-- 仅未归还时显示归还按钮 -->
           <el-button
             type="warning"
             size="small"
-            :disabled="row.returnTime !== null"
+            :disabled="row.returnTime !== null || btnLoading"
             @click="handleReturn(row.recordId)"
           >
             归还图书
@@ -44,72 +41,103 @@
       </el-table-column>
     </el-table>
 
-    <!-- 暂无数据提示 -->
     <el-empty description="暂无借阅记录" v-if="borrowList.length === 0 && !loading" />
   </el-card>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, getCurrentInstance } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getCurrentInstance } from 'vue'
-const { proxy } = getCurrentInstance()
 
-// 借阅记录列表、加载状态、用户ID
+// 全局实例，兼容你项目的 $router/$axios
+const { proxy } = getCurrentInstance()
+const globalRouter = proxy?.$router
+
 const borrowList = ref([])
 const loading = ref(false)
+const btnLoading = ref(false)
 const userId = ref(null)
 
-// 页面加载：读取用户ID + 查询借阅记录
-onMounted(() => {
-  const userInfo = localStorage.getItem('userInfo')
-  if (userInfo) {
-    userId.value = JSON.parse(userInfo).userId
-    getBorrowList()
-  } else {
-    ElMessage.warning('请先登录')
+// 🔴 只有点击归还的时候，才校验扫码！查看记录不拦截！
+const checkScanFlag = () => {
+  const flag = sessionStorage.getItem('scanFlag')
+  if (!flag) {
+    ElMessage.warning('请先前往自助借还页拍照识别图书条码！')
+    // 兼容 router 不存在的情况，不报错
+    if (globalRouter && typeof globalRouter.push === 'function') {
+      globalRouter.push('/barcode-ocr')
+    }
+    return false
   }
-})
+  return true
+}
 
-// 查询当前用户借阅记录（复用后端 /borrow/list 接口）
+// 解析用户信息
+const getUserId = () => {
+  const userInfoStr = localStorage.getItem('userInfo')
+  if (!userInfoStr) {
+    ElMessage.warning('请先登录')
+    return null
+  }
+  try {
+    const userInfo = JSON.parse(userInfoStr)
+    return userInfo.userId
+  } catch (error) {
+    ElMessage.warning('用户信息异常，请重新登录')
+    localStorage.removeItem('userInfo')
+    return null
+  }
+}
+
+// 获取借阅列表
 const getBorrowList = async () => {
-  if (!userId.value) return
+  const uid = getUserId()
+  if (!uid) return
+  userId.value = uid
+
   loading.value = true
   try {
     const res = await proxy.$axios.get('/borrow/list', {
-      params: {
-        userId: userId.value
-      }
+      params: { userId: uid }
     })
     if (res.data.code === 200) {
-      borrowList.value = res.data.data
+      borrowList.value = Array.isArray(res.data.data) ? res.data.data : []
     } else {
-      ElMessage.error(res.data.msg)
+      ElMessage.error(res.data.msg || '获取借阅记录失败')
     }
   } catch (err) {
-    ElMessage.error('查询借阅记录失败')
+    ElMessage.error('网络异常，查询借阅记录失败')
   } finally {
     loading.value = false
   }
 }
 
-// 归还图书（调用后端 /borrow/return 接口）
+// 归还图书
 const handleReturn = async (recordId) => {
+  // 🔴 只有归还的时候，才校验扫码！
+  if (!checkScanFlag()) return
+  btnLoading.value = true
+
   try {
     const res = await proxy.$axios.put('/borrow/return', null, {
-      params: {
-        recordId: recordId
-      }
+      params: { recordId }
     })
     if (res.data.code === 200) {
-      ElMessage.success(res.data.msg)
-      // 归还成功后刷新表格
+      ElMessage.success(res.data.msg || '归还成功')
+      sessionStorage.removeItem('scanFlag')
       getBorrowList()
     } else {
-      ElMessage.error(res.data.msg)
+      ElMessage.error(res.data.msg || '归还图书失败')
     }
   } catch (err) {
-    ElMessage.error('归还图书失败')
+    ElMessage.error('网络异常，归还图书失败')
+  } finally {
+    btnLoading.value = false
   }
 }
+
+// 页面加载：直接加载数据，不拦截！
+onMounted(() => {
+  getBorrowList()
+})
 </script>

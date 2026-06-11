@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class PythonUtil {
@@ -22,28 +24,34 @@ public class PythonUtil {
      * @return 条码字符串 / null
      */
     public String getBarcode(String imgPath) {
-        // 拼接执行命令：python main.py 图片路径
         String[] cmd = {pythonPath, scriptPath, imgPath};
         Process process = null;
 
         try {
             process = new ProcessBuilder(cmd)
-                    .redirectErrorStream(true) // 合并错误流，方便调试
+                    .redirectErrorStream(true)
                     .start();
 
-            // 读取Python输出结果
+            // 一次性读取所有输出，同时做日志打印 + 结果提取
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(process.getInputStream(), "UTF-8")
             );
-            StringBuilder result = new StringBuilder();
+            List<String> allLines = new ArrayList<>();
             String line;
+
             while ((line = reader.readLine()) != null) {
-                result.append(line);
+                allLines.add(line);
+                // 实时打印到SpringBoot控制台
+                System.out.println("[Python日志] " + line);
             }
 
-            // 等待脚本执行完毕
             process.waitFor();
-            return result.toString().trim();
+
+            // 最后一行作为Python返回的条码结果（你main.py逻辑：仅print最终码）
+            if (!allLines.isEmpty()) {
+                return allLines.get(allLines.size() - 1).trim();
+            }
+            return "";
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
