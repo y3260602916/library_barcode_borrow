@@ -45,20 +45,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, getCurrentInstance } from 'vue'
+import { ref, onMounted, onActivated, getCurrentInstance } from 'vue'
 import { ElMessage } from 'element-plus'
 
-// 仅获取全局实例，使用项目已挂载的 $axios
 const { proxy } = getCurrentInstance()
 
-// 数据定义
 const bookList = ref([])
 const loading = ref(false)
 const btnLoading = ref(false)
 const keyword = ref('')
-const userId = ref(null)
 
-// 获取当前登录用户ID
 const getUserId = () => {
   const userInfoStr = localStorage.getItem('userInfo')
   if (!userInfoStr) {
@@ -75,17 +71,14 @@ const getUserId = () => {
   }
 }
 
-// 获取图书列表
 const getBookList = async () => {
   loading.value = true
   try {
     const res = await proxy.$axios.get('/book/list', {
-      params: {
-        keyword: keyword.value
-      }
+      params: { keyword: keyword.value }
     })
     if (res.data.code === 200) {
-      bookList.value = Array.isArray(res.data.data) ? res.data.data : []
+      bookList.value = res.data.data || []
     } else {
       ElMessage.error(res.data.msg || '获取图书列表失败')
     }
@@ -96,25 +89,19 @@ const getBookList = async () => {
   }
 }
 
-// 重置搜索
 const resetSearch = () => {
   keyword.value = ''
   getBookList()
 }
 
-// 借阅图书（适配后端接口，传 bookBarcode）
 const handleBorrow = async (bookBarcode) => {
   const uid = getUserId()
   if (!uid) return
-  userId.value = uid
 
   btnLoading.value = true
   try {
     const res = await proxy.$axios.post('/borrow/add', null, {
-      params: {
-        userId: uid,
-        bookBarcode: bookBarcode
-      }
+      params: { userId: uid, bookBarcode }
     })
     if (res.data.code === 200) {
       ElMessage.success('借阅成功！可前往我的借阅记录查看')
@@ -129,8 +116,11 @@ const handleBorrow = async (bookBarcode) => {
   }
 }
 
-// 页面加载自动查询图书
 onMounted(() => {
+  getBookList()
+})
+
+onActivated(() => {
   getBookList()
 })
 </script>

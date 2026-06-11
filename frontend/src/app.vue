@@ -1,72 +1,69 @@
 <template>
-  <div>
-    <!-- 未登录：显示登录页 -->
-    <Login v-if="!isLogin" />
-
-    <!-- 已登录：主页面 -->
-    <div v-else class="main">
-      <!-- 顶部导航栏 -->
-      <div class="top-bar">
-        <span>
-          当前登录：{{ userInfo.userName }}
-          ｜
-          身份：{{ userInfo.userType === 0 ? '师生' : '管理员' }}
-        </span>
-        <el-button type="text" @click="logout">退出登录</el-button>
+  <div class="app-container">
+    <!-- 顶部导航栏 -->
+    <div class="top-bar" v-if="isLogin">
+      <span>
+        当前登录：{{ userInfo.userName }}
+        ｜
+        身份：{{ userInfo.userType === 0 ? '师生' : '管理员' }}
+      </span>
+      <div class="nav-btn">
+        <el-button @click="$router.push('/ocr')">自助借还</el-button>
+        <el-button @click="$router.push('/bookList')">图书列表</el-button>
+        <el-button @click="$router.push('/borrowRecord')">我的借阅记录</el-button>
+        <el-button @click="$router.push('/chart')">数据统计</el-button>
+        <el-button type="link" @click="logout">退出登录</el-button>
       </div>
+    </div>
 
-      <div style="padding: 20px;">
-        <!-- 标签页切换所有功能模块 -->
-        <el-tabs v-model="activeTab" type="card">
-          <el-tab-pane label="自助借还" name="ocr">
-            <BarcodeOcr />
-          </el-tab-pane>
-          <el-tab-pane label="图书列表" name="bookList">
-            <BookList />
-          </el-tab-pane>
-          <el-tab-pane label="我的借阅记录" name="borrow">
-            <BorrowRecord />
-          </el-tab-pane>
-          <el-tab-pane label="数据统计" name="chart">
-            <DataChart />
-          </el-tab-pane>
-        </el-tabs>
-      </div>
+    <!-- 路由出口：当前路由页面在这里渲染 -->
+    <div class="content">
+      <router-view />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-// 引入所有组件
-import Login from './Login.vue'
-import BarcodeOcr from './components/BarcodeOcr.vue'
-import BorrowRecord from './components/BorrowRecord.vue'
-import DataChart from './components/DataChart.vue'
-import BookList from './components/BookList.vue'
+import { useRouter, useRoute } from 'vue-router'
 
-// 登录状态 & 用户信息
+const router = useRouter()
+const route = useRoute()
+
+// 用响应式变量存登录状态
 const isLogin = ref(false)
 const userInfo = ref({})
-// 标签页激活项
-const activeTab = ref('ocr')
 
-// 读取本地登录信息
-onMounted(() => {
-  let user = localStorage.getItem('userInfo')
+// 封装一个读取登录状态的方法，每次都从 localStorage 重新读
+const updateLoginState = () => {
+  const user = localStorage.getItem('userInfo')
   if (user) {
     isLogin.value = true
     userInfo.value = JSON.parse(user)
+  } else {
+    isLogin.value = false
+    userInfo.value = {}
   }
-})
+}
+
+// 页面加载时先读一次
+updateLoginState()
+
+// 关键：监听路由变化，每次跳转都重新读登录状态
+watch(
+  () => route.path,
+  () => {
+    updateLoginState()
+  }
+)
 
 // 退出登录
 const logout = () => {
   localStorage.removeItem('userInfo')
-  isLogin.value = false
-  userInfo.value = {}
+  updateLoginState() // 退出后也更新状态
   ElMessage.success('已退出登录')
+  router.push('/login')
 }
 </script>
 
@@ -79,9 +76,14 @@ const logout = () => {
   box-shadow: 0 1px 4px #ccc;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 16px;
 }
-.main {
-  width: 100%;
+.nav-btn {
+  display: flex;
+  gap: 10px;
+}
+.content {
+  padding: 20px;
 }
 </style>

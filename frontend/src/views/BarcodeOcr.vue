@@ -20,8 +20,8 @@
       <el-button type="primary" @click="openCamera" :disabled="cameraStatus">开启摄像头</el-button>
       <el-button type="danger" @click="closeCamera" :disabled="!cameraStatus">关闭摄像头</el-button>
       <el-button type="success" @click="takePhoto" :disabled="!cameraStatus">拍照识别</el-button>
-      <!-- 把 type="text" 改为 link，消除 ElementPlus 弃用警告 -->
-      <el-button link @click="resetPreview">重新拍摄</el-button>
+      <!-- 修复样式警告：link → type="text" -->
+      <el-button type="text" @click="resetPreview">重新拍摄</el-button>
     </div>
 
     <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;">
@@ -69,6 +69,21 @@ onMounted(() => {
   sessionStorage.removeItem('scanFlag')
 })
 
+// ========== 修复：安全关闭摄像头（核心！判空防报错） ==========
+const closeCamera = () => {
+  // 先停媒体流
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop())
+    mediaStream = null
+  }
+  // 关键：先判断 DOM 是否存在，再赋值
+  if (videoRef.value) {
+    videoRef.value.srcObject = null
+  }
+  cameraStatus.value = false
+}
+
+// 组件销毁强制关闭摄像头
 onUnmounted(() => {
   closeCamera()
 })
@@ -81,21 +96,13 @@ const openCamera = async () => {
       },
       audio: false
     })
+    // 此处打开时 DOM 一定存在，无需额外判空
     videoRef.value.srcObject = mediaStream
     cameraStatus.value = true
     ElMessage.success('摄像头开启成功')
   } catch (err) {
     ElMessage.error('摄像头调用失败，请检查权限')
     console.error(err)
-  }
-}
-
-const closeCamera = () => {
-  if (mediaStream) {
-    mediaStream.getTracks().forEach(track => track.stop())
-    mediaStream = null
-    videoRef.value.srcObject = null
-    cameraStatus.value = false
   }
 }
 
@@ -126,7 +133,7 @@ const resetPreview = () => {
   bookInfo.value = null
   fromCamera.value = false
   sessionStorage.removeItem('scanFlag')
-  if (cameraStatus.value) {
+  if (cameraStatus.value && videoRef.value) {
     videoRef.value.play()
   }
 }
@@ -193,6 +200,7 @@ const handleBorrow = async () => {
     if (res.data.code === 200) {
       ElMessage.success('借阅成功')
       sessionStorage.removeItem('scanFlag')
+      // 借阅后刷新当前图书信息
       await queryBookInfo()
     } else {
       ElMessage.error(res.data.msg)

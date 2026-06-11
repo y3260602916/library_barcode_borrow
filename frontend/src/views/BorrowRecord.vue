@@ -49,30 +49,14 @@
 import { ref, onMounted, getCurrentInstance } from 'vue'
 import { ElMessage } from 'element-plus'
 
-// 全局实例，兼容你项目的 $router/$axios
+// 全局实例
 const { proxy } = getCurrentInstance()
-const globalRouter = proxy?.$router
 
 const borrowList = ref([])
 const loading = ref(false)
 const btnLoading = ref(false)
-const userId = ref(null)
 
-// 🔴 只有点击归还的时候，才校验扫码！查看记录不拦截！
-const checkScanFlag = () => {
-  const flag = sessionStorage.getItem('scanFlag')
-  if (!flag) {
-    ElMessage.warning('请先前往自助借还页拍照识别图书条码！')
-    // 兼容 router 不存在的情况，不报错
-    if (globalRouter && typeof globalRouter.push === 'function') {
-      globalRouter.push('/barcode-ocr')
-    }
-    return false
-  }
-  return true
-}
-
-// 解析用户信息
+// 获取用户ID
 const getUserId = () => {
   const userInfoStr = localStorage.getItem('userInfo')
   if (!userInfoStr) {
@@ -91,17 +75,17 @@ const getUserId = () => {
 
 // 获取借阅列表
 const getBorrowList = async () => {
-  const uid = getUserId()
-  if (!uid) return
-  userId.value = uid
+  const userId = getUserId()
+  if (!userId) return
 
   loading.value = true
   try {
     const res = await proxy.$axios.get('/borrow/list', {
-      params: { userId: uid }
+      params: { userId }
     })
     if (res.data.code === 200) {
-      borrowList.value = Array.isArray(res.data.data) ? res.data.data : []
+      // 确保 data 是数组，空数组也能正常渲染
+      borrowList.value = res.data.data || []
     } else {
       ElMessage.error(res.data.msg || '获取借阅记录失败')
     }
@@ -114,10 +98,14 @@ const getBorrowList = async () => {
 
 // 归还图书
 const handleReturn = async (recordId) => {
-  // 🔴 只有归还的时候，才校验扫码！
-  if (!checkScanFlag()) return
-  btnLoading.value = true
+  const flag = sessionStorage.getItem('scanFlag')
+  if (!flag) {
+    ElMessage.warning('请先前往自助借还页拍照识别图书条码！')
+    proxy.$router.push('/ocr')
+    return
+  }
 
+  btnLoading.value = true
   try {
     const res = await proxy.$axios.put('/borrow/return', null, {
       params: { recordId }
@@ -136,7 +124,6 @@ const handleReturn = async (recordId) => {
   }
 }
 
-// 页面加载：直接加载数据，不拦截！
 onMounted(() => {
   getBorrowList()
 })
