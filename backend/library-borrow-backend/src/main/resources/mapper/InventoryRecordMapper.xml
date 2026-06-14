@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.libraryborrowbackend.mapper.InventoryRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.campus.libraryborrowbackend.entity.InventoryRecord">
+        <id property="recordId" column="record_id" />
+        <result property="bookId" column="book_id" />
+        <result property="bookName" column="book_name" />
+        <result property="type" column="type" />
+        <result property="quantity" column="quantity" />
+        <result property="operator" column="operator" />
+        <result property="operateTime" column="operate_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        record_id, book_id, book_name, type, quantity, operator, operate_time, remark
+    </sql>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from inventory_record
+        where record_id = #{recordId}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from inventory_record
+        order by operate_time desc
+    </select>
+
+    <select id="selectByExample" parameterType="com.campus.libraryborrowbackend.entity.InventoryRecordExample" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from inventory_record
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause" />
+        </if>
+        <if test="orderByClause != null">
+            order by ${orderByClause}
+        </if>
+    </select>
+
+    <sql id="Example_Where_Clause">
+        <where>
+            <foreach collection="oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" suffix=")" prefixOverrides="and">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach collection="criterion.value" item="listItem" open="(" close=")" separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from inventory_record
+        where record_id = #{recordId}
+    </delete>
+
+    <insert id="insert" keyColumn="record_id" keyProperty="recordId" parameterType="com.campus.libraryborrowbackend.entity.InventoryRecord" useGeneratedKeys="true">
+        insert into inventory_record
+            (book_id, book_name, type, quantity, operator, operate_time, remark)
+        values (#{bookId}, #{bookName}, #{type}, #{quantity}, #{operator}, #{operateTime}, #{remark})
+    </insert>
+
+    <insert id="insertSelective" keyColumn="record_id" keyProperty="recordId" parameterType="com.campus.libraryborrowbackend.entity.InventoryRecord" useGeneratedKeys="true">
+        insert into inventory_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="bookId != null">book_id,</if>
+            <if test="bookName != null">book_name,</if>
+            <if test="type != null">type,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="operator != null">operator,</if>
+            <if test="operateTime != null">operate_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="bookId != null">#{bookId},</if>
+            <if test="bookName != null">#{bookName},</if>
+            <if test="type != null">#{type},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="operator != null">#{operator},</if>
+            <if test="operateTime != null">#{operateTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.campus.libraryborrowbackend.entity.InventoryRecord">
+        update inventory_record
+        <set>
+            <if test="bookId != null">book_id = #{bookId},</if>
+            <if test="bookName != null">book_name = #{bookName},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="operator != null">operator = #{operator},</if>
+            <if test="operateTime != null">operate_time = #{operateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where record_id = #{recordId}
+    </update>
+
+    <update id="updateByPrimaryKey" parameterType="com.campus.libraryborrowbackend.entity.InventoryRecord">
+        update inventory_record
+        set
+            book_id = #{bookId},
+            book_name = #{bookName},
+            type = #{type},
+            quantity = #{quantity},
+            operator = #{operator},
+            operate_time = #{operateTime},
+            remark = #{remark}
+        where record_id = #{recordId}
+    </update>
+
+    <select id="countByExample" parameterType="com.campus.libraryborrowbackend.entity.InventoryRecordExample" resultType="java.lang.Integer">
+        select count(*) from inventory_record
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause" />
+        </if>
+    </select>
+
+    <delete id="deleteByExample" parameterType="com.campus.libraryborrowbackend.entity.InventoryRecordExample">
+        delete from inventory_record
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause" />
+        </if>
+    </delete>
+
+</mapper>

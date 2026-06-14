@@ -25,6 +25,11 @@ public class SysUser {
     private String userAccount;
 
     /**
+     * 登录密码
+     */
+    private String password;
+
+    /**
      * 用户类型：0=学生 1=管理员
      */
     private Integer userType;

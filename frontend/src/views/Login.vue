@@ -23,7 +23,6 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
-// 新增：引入 useRouter
 import { useRouter } from 'vue-router'
 
 // 表单数据
@@ -33,7 +32,6 @@ const loginForm = ref({
 })
 // 错误提示
 const errorMsg = ref('')
-// 新增：获取路由实例
 const router = useRouter()
 
 // 登录请求
@@ -55,8 +53,12 @@ const login = async () => {
       // 登录成功：存储用户信息到本地缓存
       localStorage.setItem('userInfo', JSON.stringify(res.data.data))
       ElMessage.success('登录成功')
-      // 替换原来的 window.location.reload()，改用路由跳转
-      router.push('/ocr') // 登录成功后直接跳转到自助借还页
+      // 根据用户类型跳转到对应页面
+      if (res.data.data.userType === 1) {
+        router.push('/admin/users')
+      } else {
+        router.push('/ocr')
+      }
     } else {
       errorMsg.value = res.data.msg
     }

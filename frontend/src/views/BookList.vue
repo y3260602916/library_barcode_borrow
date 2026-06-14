@@ -1,13 +1,41 @@
 <template>
   <el-card shadow="hover" title="📚 图书列表" style="margin-top: 20px">
     <!-- 搜索栏 -->
-    <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center">
+    <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;">
       <el-input
         v-model="keyword"
         placeholder="请输入书名/作者搜索"
-        style="width: 300px"
+        style="width: 250px"
         clearable
       />
+      <el-select
+        v-model="category"
+        placeholder="请选择图书分类"
+        style="width: 180px"
+        clearable
+      >
+        <el-option label="计算机" value="计算机" />
+        <el-option label="文学" value="文学" />
+        <el-option label="文学类" value="文学类" />
+        <el-option label="科幻" value="科幻" />
+        <el-option label="测试类" value="测试类" />
+      </el-select>
+      <el-select
+        v-model="sortField"
+        placeholder="排序字段"
+        style="width: 120px"
+      >
+        <el-option label="图书ID" value="bookId" />
+        <el-option label="剩余库存" value="remainStock" />
+      </el-select>
+      <el-select
+        v-model="sortOrder"
+        placeholder="排序方式"
+        style="width: 100px"
+      >
+        <el-option label="升序" value="asc" />
+        <el-option label="降序" value="desc" />
+      </el-select>
       <el-button type="primary" icon="Search" @click="getBookList">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
@@ -45,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onActivated, getCurrentInstance } from 'vue'
+import { ref, onMounted, getCurrentInstance } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const { proxy } = getCurrentInstance()
@@ -54,6 +82,9 @@ const bookList = ref([])
 const loading = ref(false)
 const btnLoading = ref(false)
 const keyword = ref('')
+const category = ref('')
+const sortField = ref('bookId')
+const sortOrder = ref('asc')
 
 const getUserId = () => {
   const userInfoStr = localStorage.getItem('userInfo')
@@ -75,7 +106,12 @@ const getBookList = async () => {
   loading.value = true
   try {
     const res = await proxy.$axios.get('/book/list', {
-      params: { keyword: keyword.value }
+      params: { 
+        keyword: keyword.value,
+        category: category.value,
+        sortField: sortField.value,
+        sortOrder: sortOrder.value
+      }
     })
     if (res.data.code === 200) {
       bookList.value = res.data.data || []
@@ -91,6 +127,9 @@ const getBookList = async () => {
 
 const resetSearch = () => {
   keyword.value = ''
+  category.value = ''
+  sortField.value = 'bookId'
+  sortOrder.value = 'asc'
   getBookList()
 }
 
@@ -117,10 +156,6 @@ const handleBorrow = async (bookBarcode) => {
 }
 
 onMounted(() => {
-  getBookList()
-})
-
-onActivated(() => {
   getBookList()
 })
 </script>

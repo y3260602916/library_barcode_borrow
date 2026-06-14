@@ -51,6 +51,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- FastJSON2：JSON 序列化/反序列化 -->
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>2.0.52</version>
+        </dependency>
+
         <!-- Validation 校验 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -84,6 +91,7 @@
                 </configuration>
             </plugin>
 
+
             <!-- SpringBoot 打包插件 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -91,7 +99,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.campus.libraryborrowbackend.LibraryBorrowBackendApplication</mainClass>
-                    <skip>true</skip>
+                    <skip>false</skip>
                 </configuration>
                 <executions>
                     <execution>

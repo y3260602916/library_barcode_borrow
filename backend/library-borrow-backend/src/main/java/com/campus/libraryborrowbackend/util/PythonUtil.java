@@ -24,7 +24,8 @@ public class PythonUtil {
      * @return 条码字符串 / null
      */
     public String getBarcode(String imgPath) {
-        String[] cmd = {pythonPath, scriptPath, imgPath};
+        // 需要传递 "recognize" 参数作为第一个参数
+        String[] cmd = {pythonPath, scriptPath, "recognize", imgPath};
         Process process = null;
 
         try {

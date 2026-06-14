@@ -194,5 +194,35 @@
         is_overdue = #{isOverdue,jdbcType=TINYINT}
     where record_id = #{recordId,jdbcType=INTEGER}
   </update>
+  <!-- 全馆已借出总数：return_time 为空代表未归还 -->
+  <select id="selectBorrowedCount" resultType="int">
+    SELECT COUNT(1) FROM borrow_record WHERE return_time IS NULL
+  </select>
 
+  <!-- 单个用户未归还图书数 -->
+  <select id="selectUserBorrowCount" resultType="int">
+    SELECT COUNT(1) FROM borrow_record
+    WHERE user_id = #{userId} AND return_time IS NULL
+  </select>
+
+  <!-- 近7天借阅趋势统计 -->
+  <select id="selectWeeklyBorrowTrend" resultType="java.util.Map">
+    SELECT
+      CAST(DATE_FORMAT(DATE(borrow_time), '%w') AS UNSIGNED) AS weekDay,
+      DATE_FORMAT(DATE(borrow_time), '%Y-%m-%d') AS day,
+        COUNT(*) AS count
+    FROM borrow_record
+    WHERE borrow_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    GROUP BY DATE(borrow_time), weekDay, day
+    ORDER BY DATE(borrow_time)
+  </select>
+
+  <select id="selectByUserId" resultType="com.campus.libraryborrowbackend.entity.BorrowRecord">
+    SELECT * FROM borrow_record WHERE user_id = #{userId}
+  </select>
+
+  <!-- 删除用户的所有借阅记录 -->
+  <delete id="deleteByUserId" parameterType="java.lang.Integer">
+    DELETE FROM borrow_record WHERE user_id = #{userId}
+  </delete>
 </mapper>

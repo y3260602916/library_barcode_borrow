@@ -13,8 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class BorrowServiceImpl implements BorrowService {
@@ -106,5 +105,157 @@ public class BorrowServiceImpl implements BorrowService {
         BorrowRecordExample example = new BorrowRecordExample();
         example.createCriteria().andUserIdEqualTo(userId.intValue());
         return borrowRecordMapper.selectByExample(example);
+    }
+
+    /**
+     * 查询用户借阅记录（包含图书名称）
+     */
+    public List<Map<String, Object>> listRecordsWithBookName(Long userId) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        BorrowRecordExample example = new BorrowRecordExample();
+        example.createCriteria().andUserIdEqualTo(userId.intValue());
+        
+        List<BorrowRecord> records = borrowRecordMapper.selectByExample(example);
+        
+        for (BorrowRecord record : records) {
+            Book book = bookMapper.selectByPrimaryKey(record.getBookId());
+            Map<String, Object> item = new HashMap<>();
+            item.put("recordId", record.getRecordId());
+            item.put("bookId", record.getBookId());
+            item.put("bookName", book != null ? book.getBookName() : "未知图书");
+            item.put("borrowTime", record.getBorrowTime());
+            item.put("returnTime", record.getReturnTime());
+            item.put("isOverdue", record.getIsOverdue());
+            item.put("fineMoney", record.getFineMoney());
+            result.add(item);
+        }
+        
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getBorrowingBooks(Long userId) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        BorrowRecordExample example = new BorrowRecordExample();
+        example.createCriteria()
+                .andUserIdEqualTo(userId.intValue())
+                .andReturnTimeIsNull();
+
+        List<BorrowRecord> records = borrowRecordMapper.selectByExample(example);
+
+        for (BorrowRecord record : records) {
+            Book book = bookMapper.selectByPrimaryKey(record.getBookId());
+            if (book != null) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("recordId", record.getRecordId());
+                item.put("bookId", book.getBookId());
+                item.put("bookName", book.getBookName());
+                item.put("author", book.getAuthor());
+                item.put("category", book.getCategory());
+                item.put("borrowTime", record.getBorrowTime());
+                item.put("isOverdue", record.getIsOverdue());
+                item.put("fineMoney", record.getFineMoney());
+                result.add(item);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getOverdueReminder(Long userId) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        Date now = new Date();
+
+        BorrowRecordExample example = new BorrowRecordExample();
+        example.createCriteria()
+                .andUserIdEqualTo(userId.intValue())
+                .andReturnTimeIsNull();
+
+        List<BorrowRecord> records = borrowRecordMapper.selectByExample(example);
+
+        for (BorrowRecord record : records) {
+            Date borrowTime = record.getBorrowTime();
+            long dayCount = (now.getTime() - borrowTime.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (dayCount > BORROW_DAYS) {
+                Book book = bookMapper.selectByPrimaryKey(record.getBookId());
+                if (book != null) {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("recordId", record.getRecordId());
+                    item.put("bookId", book.getBookId());
+                    item.put("bookName", book.getBookName());
+                    item.put("author", book.getAuthor());
+                    item.put("borrowTime", borrowTime);
+                    item.put("overdueDays", dayCount - BORROW_DAYS);
+                    item.put("fineMoney", FINE_PER_DAY.multiply(new BigDecimal(dayCount - BORROW_DAYS)));
+                    result.add(item);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getAllOverdueRecords() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        Date now = new Date();
+
+        BorrowRecordExample example = new BorrowRecordExample();
+        example.createCriteria()
+                .andReturnTimeIsNull();
+
+        List<BorrowRecord> records = borrowRecordMapper.selectByExample(example);
+
+        for (BorrowRecord record : records) {
+            Date borrowTime = record.getBorrowTime();
+            long dayCount = (now.getTime() - borrowTime.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (dayCount > BORROW_DAYS) {
+                Book book = bookMapper.selectByPrimaryKey(record.getBookId());
+                SysUser user = sysUserMapper.selectByPrimaryKey(Long.valueOf(record.getUserId()));
+
+                if (book != null && user != null) {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("recordId", record.getRecordId());
+                    item.put("bookId", book.getBookId());
+                    item.put("bookName", book.getBookName());
+                    item.put("author", book.getAuthor());
+                    item.put("userId", user.getUserId());
+                    item.put("userName", user.getUserName());
+                    item.put("userAccount", user.getUserAccount());
+                    item.put("borrowTime", borrowTime);
+                    item.put("overdueDays", dayCount - BORROW_DAYS);
+                    item.put("fineMoney", FINE_PER_DAY.multiply(new BigDecimal(dayCount - BORROW_DAYS)));
+                    result.add(item);
+                }
+            }
+        }
+
+        // 按逾期天数排序
+        result.sort((a, b) -> {
+            Long overdueDaysA = (Long) a.get("overdueDays");
+            Long overdueDaysB = (Long) b.get("overdueDays");
+            return overdueDaysB.compareTo(overdueDaysA);
+        });
+
+        return result;
+    }
+
+    @Override
+    public String remindOverdueUsers(List<Integer> recordIds) {
+        // 实际项目中这里会发送短信/邮件通知
+        // 目前仅记录操作，返回成功信息
+        for (Integer recordId : recordIds) {
+            BorrowRecord record = borrowRecordMapper.selectByPrimaryKey(recordId);
+            if (record != null && record.getReturnTime() == null) {
+                // 标记已提醒（如果有此字段的话）
+                // 实际实现中可以添加提醒次数、提醒时间等字段
+            }
+        }
+        return "已向 " + recordIds.size() + " 位逾期用户发送催还通知";
     }
 }

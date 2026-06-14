@@ -1,18 +1,35 @@
 <template>
   <div class="app-container">
-    <!-- 顶部导航栏 -->
-    <div class="top-bar" v-if="isLogin">
+    <!-- 顶部导航栏 - 师生角色 -->
+    <div class="top-bar" v-if="isLogin && userInfo.userType === 0">
       <span>
         当前登录：{{ userInfo.userName }}
         ｜
-        身份：{{ userInfo.userType === 0 ? '师生' : '管理员' }}
+        身份：师生
       </span>
       <div class="nav-btn">
         <el-button @click="$router.push('/ocr')">自助借还</el-button>
         <el-button @click="$router.push('/bookList')">图书列表</el-button>
         <el-button @click="$router.push('/borrowRecord')">我的借阅记录</el-button>
         <el-button @click="$router.push('/chart')">数据统计</el-button>
-        <el-button type="link" @click="logout">退出登录</el-button>
+        <el-button type="text" @click="logout">退出登录</el-button>
+      </div>
+    </div>
+
+    <!-- 顶部导航栏 - 管理员角色 -->
+    <div class="top-bar admin-bar" v-if="isLogin && userInfo.userType === 1">
+      <span>
+        当前登录：{{ userInfo.userName }}
+        ｜
+        身份：<span style="color: #f56c6c; font-weight: bold;">管理员</span>
+      </span>
+      <div class="nav-btn">
+        <el-button type="primary" @click="$router.push('/admin/users')">账号管理</el-button>
+        <el-button @click="$router.push('/admin/inventory')">出入库管理</el-button>
+        <el-button @click="$router.push('/admin/stock')">库存管理</el-button>
+        <el-button @click="$router.push('/admin/overdue')">逾期管理</el-button>
+        <el-button @click="$router.push('/admin/stats')">统计分析</el-button>
+        <el-button type="text" @click="logout">退出登录</el-button>
       </div>
     </div>
 
@@ -78,6 +95,30 @@ const logout = () => {
   justify-content: space-between;
   align-items: center;
   font-size: 16px;
+}
+.admin-bar {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.admin-bar .el-button {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+  background: transparent;
+}
+.admin-bar .el-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.admin-bar .el-button--primary {
+  background: #f56c6c;
+  border-color: #f56c6c;
+}
+.admin-bar .el-button--primary:hover {
+  background: #f78989;
+  border-color: #f78989;
+}
+.admin-bar .el-button--text {
+  color: #9ca3af;
 }
 .nav-btn {
   display: flex;

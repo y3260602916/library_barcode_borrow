@@ -8,12 +8,13 @@
         <id property="userId" column="user_id" />
         <result property="userName" column="user_name" />
         <result property="userAccount" column="user_account" />
+        <result property="password" column="user_pwd" />
         <result property="userType" column="user_type" />
         <result property="createTime" column="create_time" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        user_id,user_name,user_account,user_type,create_time
+        user_id,user_name,user_account,user_pwd,user_type,create_time
     </sql>
 
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
@@ -37,8 +38,8 @@
     </delete>
     <insert id="insert" keyColumn="user_id" keyProperty="userId" parameterType="com.campus.libraryborrowbackend.entity.SysUser" useGeneratedKeys="true">
         insert into sys_user
-            ( user_id,user_name,user_account,user_type,create_time)
-        values (#{userId},#{userName},#{userAccount},#{userType},#{createTime})
+            ( user_id,user_name,user_account,user_pwd,user_type,create_time)
+        values (#{userId},#{userName},#{userAccount},#{password},#{userType},#{createTime})
     </insert>
     <insert id="insertSelective" keyColumn="user_id" keyProperty="userId" parameterType="com.campus.libraryborrowbackend.entity.SysUser" useGeneratedKeys="true">
         insert into sys_user
@@ -46,6 +47,7 @@
             <if test="userId != null">user_id,</if>
             <if test="userName != null">user_name,</if>
             <if test="userAccount != null">user_account,</if>
+            <if test="password != null">user_pwd,</if>
             <if test="userType != null">user_type,</if>
             <if test="createTime != null">create_time,</if>
         </trim>
@@ -53,6 +55,7 @@
             <if test="userId != null">#{userId},</if>
             <if test="userName != null">#{userName},</if>
             <if test="userAccount != null">#{userAccount},</if>
+            <if test="password != null">#{password},</if>
             <if test="userType != null">#{userType},</if>
             <if test="createTime != null">#{createTime},</if>
         </trim>
@@ -65,6 +68,9 @@
             </if>
             <if test="userAccount != null">
                 user_account = #{userAccount},
+            </if>
+            <if test="password != null">
+                user_pwd = #{password},
             </if>
             <if test="userType != null">
                 user_type = #{userType},
@@ -80,9 +86,37 @@
         set
             user_name =  #{userName},
             user_account =  #{userAccount},
+            user_pwd =  #{password},
             user_type =  #{userType},
             create_time =  #{createTime}
         where   user_id = #{userId}
     </update>
+
+    <!-- 查询所有用户 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from sys_user
+        order by create_time desc
+    </select>
+
+    <!-- 根据用户类型查询 -->
+    <select id="selectByUserType" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from sys_user
+        where user_type = #{userType}
+        order by create_time desc
+    </select>
+
+    <!-- 搜索用户（根据账号或姓名模糊查询） -->
+    <select id="searchUsers" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from sys_user
+        where user_account like concat('%', #{keyword}, '%')
+           or user_name like concat('%', #{keyword}, '%')
+        order by create_time desc
+    </select>
 
 </mapper>

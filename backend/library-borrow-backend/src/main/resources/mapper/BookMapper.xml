@@ -2,24 +2,21 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.campus.libraryborrowbackend.mapper.BookMapper">
 
-  <!-- 结果映射 -->
   <resultMap id="BaseResultMap" type="com.campus.libraryborrowbackend.entity.Book">
-    <id column="book_id" jdbcType="INTEGER" property="bookId"/>
-    <result column="book_barcode" jdbcType="VARCHAR" property="bookBarcode"/>
-    <result column="book_name" jdbcType="VARCHAR" property="bookName"/>
-    <result column="author" jdbcType="VARCHAR" property="author"/>
-    <result column="category" jdbcType="VARCHAR" property="category"/>
-    <result column="total_stock" jdbcType="INTEGER" property="totalStock"/>
-    <result column="remain_stock" jdbcType="INTEGER" property="remainStock"/>
-    <result column="price" jdbcType="DECIMAL" property="price"/>
+    <id column="book_id" jdbcType="INTEGER" property="bookId" />
+    <result column="book_name" jdbcType="VARCHAR" property="bookName" />
+    <result column="author" jdbcType="VARCHAR" property="author" />
+    <result column="category" jdbcType="VARCHAR" property="category" />
+    <!-- 重点：数据库book_barcode 对应 实体bookBarcode -->
+    <result column="book_barcode" jdbcType="VARCHAR" property="bookBarcode" />
+    <result column="total_stock" jdbcType="INTEGER" property="totalStock" />
+    <result column="remain_stock" jdbcType="INTEGER" property="remainStock" />
   </resultMap>
 
-  <!-- 基础字段列表 -->
   <sql id="Base_Column_List">
-    book_id, book_barcode, book_name, author, category, total_stock, remain_stock, price
+    book_id, book_name, author, category, book_barcode, total_stock, remain_stock
   </sql>
 
-  <!-- Example 动态 Where 子句 -->
   <sql id="Example_Where_Clause">
     <where>
       <foreach collection="oredCriteria" item="criteria" separator="or">
@@ -50,7 +47,6 @@
     </where>
   </sql>
 
-  <!-- Example Update 动态 Where 子句 -->
   <sql id="Update_By_Example_Where_Clause">
     <where>
       <foreach collection="example.oredCriteria" item="criteria" separator="or">
@@ -81,15 +77,14 @@
     </where>
   </sql>
 
-  <!-- ==================== 自动生成的 CRUD 方法 ==================== -->
-
+  <!-- 基础CRUD -->
   <select id="selectByExample" parameterType="com.campus.libraryborrowbackend.entity.BookExample" resultMap="BaseResultMap">
     select
     <if test="distinct">distinct</if>
-    <include refid="Base_Column_List"/>
+    <include refid="Base_Column_List" />
     from book_info
     <if test="_parameter != null">
-      <include refid="Example_Where_Clause"/>
+      <include refid="Example_Where_Clause" />
     </if>
     <if test="orderByClause != null">
       order by ${orderByClause}
@@ -97,124 +92,158 @@
   </select>
 
   <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
-    select <include refid="Base_Column_List"/>
+    select <include refid="Base_Column_List" />
     from book_info
     where book_id = #{bookId,jdbcType=INTEGER}
   </select>
 
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
-    delete from book_info
-    where book_id = #{bookId,jdbcType=INTEGER}
+    delete from book_info where book_id = #{bookId,jdbcType=INTEGER}
   </delete>
 
   <delete id="deleteByExample" parameterType="com.campus.libraryborrowbackend.entity.BookExample">
     delete from book_info
     <if test="_parameter != null">
-      <include refid="Example_Where_Clause"/>
+      <include refid="Example_Where_Clause" />
     </if>
   </delete>
 
   <insert id="insert" parameterType="com.campus.libraryborrowbackend.entity.Book">
-    insert into book_info (book_id, book_barcode, book_name, author, category, total_stock, remain_stock, price)
-    values (#{bookId,jdbcType=INTEGER}, #{bookBarcode,jdbcType=VARCHAR}, #{bookName,jdbcType=VARCHAR},
-            #{author,jdbcType=VARCHAR}, #{category,jdbcType=VARCHAR}, #{totalStock,jdbcType=INTEGER},
-            #{remainStock,jdbcType=INTEGER}, #{price,jdbcType=DECIMAL})
+    insert into book_info (book_id, book_name, author, category, book_barcode, total_stock, remain_stock)
+    values (#{bookId}, #{bookName}, #{author}, #{category}, #{bookBarcode}, #{totalStock}, #{remainStock})
   </insert>
 
   <insert id="insertSelective" parameterType="com.campus.libraryborrowbackend.entity.Book">
     insert into book_info
     <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="bookId != null">book_id,</if>
-      <if test="bookBarcode != null">book_barcode,</if>
       <if test="bookName != null">book_name,</if>
       <if test="author != null">author,</if>
       <if test="category != null">category,</if>
+      <if test="bookBarcode != null">book_barcode,</if>
       <if test="totalStock != null">total_stock,</if>
       <if test="remainStock != null">remain_stock,</if>
-      <if test="price != null">price,</if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
-      <if test="bookId != null">#{bookId,jdbcType=INTEGER},</if>
-      <if test="bookBarcode != null">#{bookBarcode,jdbcType=VARCHAR},</if>
-      <if test="bookName != null">#{bookName,jdbcType=VARCHAR},</if>
-      <if test="author != null">#{author,jdbcType=VARCHAR},</if>
-      <if test="category != null">#{category,jdbcType=VARCHAR},</if>
-      <if test="totalStock != null">#{totalStock,jdbcType=INTEGER},</if>
-      <if test="remainStock != null">#{remainStock,jdbcType=INTEGER},</if>
-      <if test="price != null">#{price,jdbcType=DECIMAL},</if>
+      <if test="bookId != null">#{bookId},</if>
+      <if test="bookName != null">#{bookName},</if>
+      <if test="author != null">#{author},</if>
+      <if test="category != null">#{category},</if>
+      <if test="bookBarcode != null">#{bookBarcode},</if>
+      <if test="totalStock != null">#{totalStock},</if>
+      <if test="remainStock != null">#{remainStock},</if>
     </trim>
   </insert>
 
   <select id="countByExample" parameterType="com.campus.libraryborrowbackend.entity.BookExample" resultType="java.lang.Long">
     select count(*) from book_info
     <if test="_parameter != null">
-      <include refid="Example_Where_Clause"/>
+      <include refid="Example_Where_Clause" />
     </if>
   </select>
 
   <update id="updateByExampleSelective" parameterType="map">
     update book_info
     <set>
-      <if test="row.bookId != null">book_id = #{row.bookId,jdbcType=INTEGER},</if>
-      <if test="row.bookBarcode != null">book_barcode = #{row.bookBarcode,jdbcType=VARCHAR},</if>
-      <if test="row.bookName != null">book_name = #{row.bookName,jdbcType=VARCHAR},</if>
-      <if test="row.author != null">author = #{row.author,jdbcType=VARCHAR},</if>
-      <if test="row.category != null">category = #{row.category,jdbcType=VARCHAR},</if>
-      <if test="row.totalStock != null">total_stock = #{row.totalStock,jdbcType=INTEGER},</if>
-      <if test="row.remainStock != null">remain_stock = #{row.remainStock,jdbcType=INTEGER},</if>
-      <if test="row.price != null">price = #{row.price,jdbcType=DECIMAL},</if>
+      <if test="row.bookId != null">book_id = #{row.bookId},</if>
+      <if test="row.bookName != null">book_name = #{row.bookName},</if>
+      <if test="row.author != null">author = #{row.author},</if>
+      <if test="row.category != null">category = #{row.category},</if>
+      <if test="row.bookBarcode != null">book_barcode = #{row.bookBarcode},</if>
+      <if test="row.totalStock != null">total_stock = #{row.totalStock},</if>
     </set>
     <if test="example != null">
-      <include refid="Update_By_Example_Where_Clause"/>
+      <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
 
   <update id="updateByExample" parameterType="map">
     update book_info
-    set book_id = #{row.bookId,jdbcType=INTEGER},
-    book_barcode = #{row.bookBarcode,jdbcType=VARCHAR},
-    book_name = #{row.bookName,jdbcType=VARCHAR},
-    author = #{row.author,jdbcType=VARCHAR},
-    category = #{row.category,jdbcType=VARCHAR},
-    total_stock = #{row.totalStock,jdbcType=INTEGER},
-    remain_stock = #{row.remainStock,jdbcType=INTEGER},
-    price = #{row.price,jdbcType=DECIMAL}
+    set book_id = #{row.bookId},
+    book_name = #{row.bookName},
+    author = #{row.author},
+    category = #{row.category},
+    book_barcode = #{row.bookBarcode},
+    total_stock = #{row.totalStock}
     <if test="example != null">
-      <include refid="Update_By_Example_Where_Clause"/>
+      <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
 
   <update id="updateByPrimaryKeySelective" parameterType="com.campus.libraryborrowbackend.entity.Book">
     update book_info
     <set>
-      <if test="bookBarcode != null">book_barcode = #{bookBarcode,jdbcType=VARCHAR},</if>
-      <if test="bookName != null">book_name = #{bookName,jdbcType=VARCHAR},</if>
-      <if test="author != null">author = #{author,jdbcType=VARCHAR},</if>
-      <if test="category != null">category = #{category,jdbcType=VARCHAR},</if>
-      <if test="totalStock != null">total_stock = #{totalStock,jdbcType=INTEGER},</if>
-      <if test="remainStock != null">remain_stock = #{remainStock,jdbcType=INTEGER},</if>
-      <if test="price != null">price = #{price,jdbcType=DECIMAL},</if>
+      <if test="bookName != null">book_name = #{bookName},</if>
+      <if test="author != null">author = #{author},</if>
+      <if test="category != null">category = #{category},</if>
+      <if test="bookBarcode != null">book_barcode = #{bookBarcode},</if>
+      <if test="totalStock != null">total_stock = #{totalStock},</if>
+      <if test="remainStock != null">remain_stock = #{remainStock},</if>
     </set>
-    where book_id = #{bookId,jdbcType=INTEGER}
+    where book_id = #{bookId}
   </update>
 
   <update id="updateByPrimaryKey" parameterType="com.campus.libraryborrowbackend.entity.Book">
     update book_info
-    set book_barcode = #{bookBarcode,jdbcType=VARCHAR},
-        book_name = #{bookName,jdbcType=VARCHAR},
-        author = #{author,jdbcType=VARCHAR},
-        category = #{category,jdbcType=VARCHAR},
-        total_stock = #{totalStock,jdbcType=INTEGER},
-        remain_stock = #{remainStock,jdbcType=INTEGER},
-        price = #{price,jdbcType=DECIMAL}
-    where book_id = #{bookId,jdbcType=INTEGER}
+    set book_name = #{bookName},
+        author = #{author},
+        category = #{category},
+        book_barcode = #{bookBarcode},
+        total_stock = #{totalStock},
+        remain_stock = #{remainStock}
+    where book_id = #{bookId}
   </update>
 
-  <!-- ==================== 自定义方法 ==================== -->
-  <select id="selectBookByBarcode" resultMap="BaseResultMap">
-    select <include refid="Base_Column_List"/>
+  <!-- 根据条码查询图书 -->
+  <select id="selectBookByBarcode" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
     from book_info
-    where book_barcode = #{bookBarcode,jdbcType=VARCHAR}
+    where book_barcode = #{bookBarcode}
+  </select>
+
+  <!-- 热门图书 -->
+  <select id="selectHotBooks" resultMap="BaseResultMap">
+    SELECT b.*
+    FROM book_info b
+           LEFT JOIN borrow_record br ON b.book_id = br.book_id
+    GROUP BY b.book_id, b.book_name, b.author, b.category, b.book_barcode, b.total_stock, b.remain_stock
+    ORDER BY COUNT(br.record_id) DESC
+      LIMIT #{limit}
+  </select>
+
+  <!-- 按分类推荐，排除本人已借图书 -->
+  <select id="selectRecommendBooks" resultMap="BaseResultMap">
+    SELECT DISTINCT b.*
+    FROM book_info b
+    WHERE b.category IN
+    <foreach collection="categories" item="cat" open="(" separator="," close=")">
+      #{cat}
+    </foreach>
+    AND b.book_id NOT IN (
+    SELECT book_id FROM borrow_record WHERE user_id = #{userId}
+    )
+    ORDER BY RAND()
+    LIMIT #{limit}
+  </select>
+
+  <!-- 图书分类统计（图表） -->
+  <select id="selectBookCategoryStats" resultType="java.util.Map">
+    SELECT category AS name, COUNT(*) AS value
+    FROM book_info
+    GROUP BY category
+  </select>
+
+  <!-- 冷启动热门图书，返回AiBookDTO -->
+  <select id="selectHotBooksForColdStart" resultType="com.campus.libraryborrowbackend.dto.AiBookDTO">
+    SELECT
+      book_name AS bookName,
+      author,
+      category
+    FROM book_info b
+           LEFT JOIN borrow_record br ON b.book_id = br.book_id
+    GROUP BY b.book_id, book_name, author, category
+    ORDER BY COUNT(br.record_id) DESC
+      LIMIT 5
   </select>
 
 </mapper>
