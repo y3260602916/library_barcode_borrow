@@ -1,18 +1,20 @@
 <template>
-  <el-card shadow="hover" title="📚 图书列表" style="margin-top: 20px">
+  <el-card class="glass-card" shadow="hover" title="📚 图书列表">
     <!-- 搜索栏 -->
-    <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;">
+    <div class="search-bar">
       <el-input
         v-model="keyword"
         placeholder="请输入书名/作者搜索"
         style="width: 250px"
         clearable
+        size="large"
       />
       <el-select
         v-model="category"
         placeholder="请选择图书分类"
         style="width: 180px"
         clearable
+        size="large"
       >
         <el-option label="计算机" value="计算机" />
         <el-option label="文学" value="文学" />
@@ -24,6 +26,7 @@
         v-model="sortField"
         placeholder="排序字段"
         style="width: 120px"
+        size="large"
       >
         <el-option label="图书ID" value="bookId" />
         <el-option label="剩余库存" value="remainStock" />
@@ -32,12 +35,13 @@
         v-model="sortOrder"
         placeholder="排序方式"
         style="width: 100px"
+        size="large"
       >
         <el-option label="升序" value="asc" />
         <el-option label="降序" value="desc" />
       </el-select>
-      <el-button type="primary" icon="Search" @click="getBookList">搜索</el-button>
-      <el-button @click="resetSearch">重置</el-button>
+      <el-button type="primary" :icon="Search" size="large" @click="getBookList">搜索</el-button>
+      <el-button size="large" @click="resetSearch">重置</el-button>
     </div>
 
     <!-- 图书表格 -->
@@ -75,6 +79,7 @@
 <script setup>
 import { ref, onMounted, getCurrentInstance } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 
@@ -159,3 +164,13 @@ onMounted(() => {
   getBookList()
 })
 </script>
+
+<style scoped>
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+</style>

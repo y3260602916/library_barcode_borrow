@@ -38,6 +38,11 @@ public interface BorrowService {
     List<Map<String, Object>> getAllOverdueRecords();
 
     /**
+     * 查询全馆未归还借阅记录（包含即将到期和逾期）
+     */
+    List<Map<String, Object>> getAllNotReturnedRecords();
+
+    /**
      * 批量催还（发送通知）
      */
     String remindOverdueUsers(List<Integer> recordIds);

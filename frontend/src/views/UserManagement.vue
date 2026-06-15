@@ -1,22 +1,23 @@
 <template>
-  <el-card shadow="hover" title="👥 师生账号管理" style="margin-top: 20px">
+  <el-card class="glass-card" shadow="hover" title="👥 师生账号管理">
     <!-- 搜索栏 -->
-    <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center">
+    <div class="search-bar">
       <el-input
         v-model="keyword"
         placeholder="请输入账号/姓名搜索"
         style="width: 300px"
         clearable
+        size="large"
         @keyup.enter="getUserList"
       />
-      <el-select v-model="userType" placeholder="选择身份类型" style="width: 150px">
+      <el-select v-model="userType" placeholder="选择身份类型" style="width: 150px" size="large">
         <el-option label="全部" :value="''" />
         <el-option label="师生" :value="0" />
         <el-option label="管理员" :value="1" />
       </el-select>
-      <el-button type="primary" icon="Search" @click="getUserList">搜索</el-button>
-      <el-button @click="resetSearch">重置</el-button>
-      <el-button type="success" icon="Plus" @click="openAddModal">新增用户</el-button>
+      <el-button type="primary" :icon="Search" size="large" @click="getUserList">搜索</el-button>
+      <el-button size="large" @click="resetSearch">重置</el-button>
+      <el-button type="success" :icon="Plus" size="large" @click="openAddModal">新增用户</el-button>
     </div>
 
     <!-- 用户表格 -->
@@ -53,8 +54,8 @@
     <el-empty description="暂无用户数据" v-if="userList.length === 0 && !loading" />
 
     <!-- 新增用户弹窗 -->
-    <el-dialog title="新增用户" v-model="showModal" width="400px">
-      <el-form :model="userForm" label-width="80px">
+    <el-dialog title="新增用户" v-model="showModal" width="450px">
+      <el-form :model="userForm" label-width="100px">
         <el-form-item label="账号" :required="true">
           <el-input v-model="userForm.userAccount" placeholder="请输入账号" />
         </el-form-item>
@@ -82,6 +83,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Plus } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const userList = ref([])
@@ -240,3 +242,13 @@ onMounted(() => {
   getUserList()
 })
 </script>
+
+<style scoped>
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+</style>

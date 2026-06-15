@@ -184,7 +184,7 @@ const getBorrowList = async () => {
       params: { userId }
     });
     if (res.data.code === 200) {
-      borrowList.value = res.data.data || [];
+      borrowList.value = (res.data.data || []).sort((a, b) => (b.borrowTime || 0) - (a.borrowTime || 0));
     } else {
       ElMessage.error(res.data.msg || '获取借阅记录失败');
     }

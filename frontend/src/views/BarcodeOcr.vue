@@ -23,7 +23,7 @@
         </div>
 
         <div style="display: flex; gap: 12px; margin-top: 16px;">
-          <el-button type="primary" @click="openCamera" :disabled="cameraStatus">开启摄像头</el-button>
+          <el-button type="success" @click="openCamera" :disabled="cameraStatus">开启摄像头</el-button>
           <el-button type="danger" @click="closeCamera" :disabled="!cameraStatus">关闭摄像头</el-button>
           <el-button type="success" @click="takePhoto" :disabled="!cameraStatus">拍照识别</el-button>
           <el-button type="text" @click="resetPreview">重新拍摄</el-button>

@@ -83,6 +83,15 @@ public class BorrowController {
     }
 
     /**
+     * 查询全馆未归还借阅记录（包含即将到期和逾期）
+     */
+    @GetMapping("/not-returned/all")
+    public Result<List<Map<String, Object>>> getAllNotReturnedRecords() {
+        List<Map<String, Object>> list = borrowService.getAllNotReturnedRecords();
+        return Result.success(list);
+    }
+
+    /**
      * 批量催还（发送通知）
      */
     @PostMapping("/overdue/remind")

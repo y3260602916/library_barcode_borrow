@@ -1,20 +1,88 @@
 <template>
-  <div class="login-container">
-    <div class="login-box">
-      <h2>智能图书借阅系统</h2>
-      <el-form ref="loginFormRef" :model="loginForm" label-width="80px">
-        <el-form-item label="账号">
-          <el-input v-model="loginForm.userAccount" placeholder="请输入登录账号"></el-input>
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码"></el-input>
-        </el-form-item>
-        <!-- 错误提示 -->
-        <div class="error-tip" v-if="errorMsg">{{ errorMsg }}</div>
-        <el-form-item>
-          <el-button type="primary" class="login-btn" @click="login">登 录</el-button>
-        </el-form-item>
-      </el-form>
+  <div class="login-page">
+    <div class="login-bg">
+      <div class="bg-gradient"></div>
+      <div class="bg-blob blob-1"></div>
+      <div class="bg-blob blob-2"></div>
+      <div class="bg-blob blob-3"></div>
+    </div>
+
+    <div class="login-container fade-in-up">
+      <div class="login-card glass-card">
+        <div class="card-header">
+          <div class="logo-icon">
+            <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
+              <path d="M6 4h20v20H6z" fill="#667eea" opacity="0.8"/>
+              <path d="M10 8h12v12H10z" fill="white"/>
+              <circle cx="16" cy="16" r="4" fill="#764ba2"/>
+            </svg>
+          </div>
+          <h1>欢迎回来</h1>
+          <p>登录您的智慧图书馆账号</p>
+        </div>
+
+        <el-form
+          ref="loginFormRef"
+          :model="loginForm"
+          :rules="rules"
+          class="login-form"
+        >
+          <el-form-item prop="userAccount">
+            <el-input
+              v-model="loginForm.userAccount"
+              placeholder="请输入账号"
+              :prefix-icon="User"
+              size="large"
+              class="custom-input"
+            />
+          </el-form-item>
+
+          <el-form-item prop="password">
+            <el-input
+              v-model="loginForm.password"
+              type="password"
+              placeholder="请输入密码"
+              :prefix-icon="Lock"
+              size="large"
+              class="custom-input"
+              show-password
+            />
+          </el-form-item>
+
+          <div v-if="errorMsg" class="error-msg">
+            <el-icon><Warning /></el-icon>
+            <span>{{ errorMsg }}</span>
+          </div>
+
+          <el-button
+            type="primary"
+            size="large"
+            class="login-btn gradient-btn"
+            :loading="loading"
+            @click="login"
+          >
+            {{ loading ? '登录中...' : '登录系统' }}
+          </el-button>
+
+          <div class="demo-tips">
+            <p>演示账号</p>
+            <div class="demo-cards">
+              <div class="demo-card" @click="fillDemo('student')">
+                <span>📚 学生</span>
+                <span class="demo-account">2026001 / 123456</span>
+              </div>
+              <div class="demo-card" @click="fillDemo('admin')">
+                <span>👨‍💼 管理员</span>
+                <span class="demo-account">admin / 123456</span>
+              </div>
+            </div>
+          </div>
+        </el-form>
+      </div>
+
+      <div class="deco-text">
+        <span>智慧图书馆 · 让阅读更简单</span>
+      </div>
     </div>
   </div>
 </template>
@@ -22,79 +90,280 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { User, Lock, Warning } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 
-// 表单数据
+const router = useRouter()
+const loginFormRef = ref(null)
 const loginForm = ref({
   userAccount: '',
   password: ''
 })
-// 错误提示
 const errorMsg = ref('')
-const router = useRouter()
+const loading = ref(false)
 
-// 登录请求
+const rules = {
+  userAccount: [
+    { required: true, message: '请输入账号', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' }
+  ]
+}
+
+const fillDemo = (type) => {
+  if (type === 'student') {
+    loginForm.value.userAccount = '2026001'
+    loginForm.value.password = '123456'
+  } else {
+    loginForm.value.userAccount = 'admin'
+    loginForm.value.password = '123456'
+  }
+}
+
 const login = async () => {
-  errorMsg.value = ''
-  // 简单前端非空校验
-  if (!loginForm.value.userAccount) {
-    errorMsg.value = '请输入账号'
-    return
-  }
-  if (!loginForm.value.password) {
-    errorMsg.value = '请输入密码'
-    return
-  }
+  if (!loginFormRef.value) return
+  await loginFormRef.value.validate(async (valid) => {
+    if (!valid) return
 
-  try {
-    const res = await axios.post('/user/login', loginForm.value)
-    if (res.data.code === 200) {
-      // 登录成功：存储用户信息到本地缓存
-      localStorage.setItem('userInfo', JSON.stringify(res.data.data))
-      ElMessage.success('登录成功')
-      // 根据用户类型跳转到对应页面
-      if (res.data.data.userType === 1) {
-        router.push('/admin/users')
+    errorMsg.value = ''
+    loading.value = true
+
+    try {
+      const res = await axios.post('/user/login', loginForm.value)
+      if (res.data.code === 200) {
+        localStorage.setItem('userInfo', JSON.stringify(res.data.data))
+        ElMessage.success('登录成功')
+        if (res.data.data.userType === 1) {
+          router.push('/admin/users')
+        } else {
+          router.push('/ocr')
+        }
       } else {
-        router.push('/ocr')
+        errorMsg.value = res.data.msg
       }
-    } else {
-      errorMsg.value = res.data.msg
+    } catch (err) {
+      errorMsg.value = '网络请求失败'
+    } finally {
+      loading.value = false
     }
-  } catch (err) {
-    errorMsg.value = '网络请求失败'
-  }
+  })
 }
 </script>
 
 <style scoped>
-.login-container {
-  width: 100vw;
-  height: 100vh;
-  background-color: #f5f7fa;
+.login-page {
+  min-height: 100vh;
+  position: relative;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
-.login-box {
-  width: 400px;
-  padding: 40px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+
+.login-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
 }
-h2 {
+
+.bg-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+}
+
+.blob-1 {
+  width: 500px;
+  height: 500px;
+  background: #f093fb;
+  top: -150px;
+  right: -150px;
+  animation: float 8s ease-in-out infinite;
+}
+
+.blob-2 {
+  width: 600px;
+  height: 600px;
+  background: #4facfe;
+  bottom: -200px;
+  left: -200px;
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+.blob-3 {
+  width: 350px;
+  height: 350px;
+  background: #43e97b;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: float 12s ease-in-out infinite;
+}
+
+.login-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  margin: 20px;
+}
+
+.login-card {
+  padding: 48px 40px;
+  border-radius: 32px;
+}
+
+.card-header {
   text-align: center;
-  margin-bottom: 30px;
-  color: #333;
+  margin-bottom: 32px;
 }
+
+.logo-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.card-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 8px;
+}
+
+.card-header p {
+  color: #718096;
+  font-size: 14px;
+}
+
+.login-form {
+  margin-top: 8px;
+}
+
+.custom-input :deep(.el-input__wrapper) {
+  border-radius: 14px;
+  padding: 4px 12px;
+  box-shadow: 0 0 0 1px #e2e8f0 inset;
+}
+
+.custom-input :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #667eea inset;
+}
+
+.custom-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3), 0 0 0 1px #667eea inset;
+}
+
 .login-btn {
   width: 100%;
+  height: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 14px !important;
+  margin-top: 24px;
 }
-.error-tip {
+
+.error-msg {
+  background: #fee;
   color: #f56c6c;
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 16px 0 0;
+}
+
+.demo-tips {
+  margin-top: 32px;
   text-align: center;
-  margin: 10px 0;
+}
+
+.demo-tips > p {
+  font-size: 12px;
+  color: #a0aec0;
+  margin-bottom: 12px;
+}
+
+.demo-cards {
+  display: flex;
+  gap: 12px;
+}
+
+.demo-card {
+  flex: 1;
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.demo-card:hover {
+  background: linear-gradient(135deg, #667eea15, #764ba215);
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.demo-card span:first-child {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.demo-account {
+  font-size: 11px;
+  color: #718096;
+}
+
+.deco-text {
+  text-align: center;
+  margin-top: 32px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

@@ -246,6 +246,63 @@ public class BorrowServiceImpl implements BorrowService {
     }
 
     @Override
+    public List<Map<String, Object>> getAllNotReturnedRecords() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        Date now = new Date();
+
+        BorrowRecordExample example = new BorrowRecordExample();
+        example.createCriteria()
+                .andReturnTimeIsNull();
+
+        List<BorrowRecord> records = borrowRecordMapper.selectByExample(example);
+
+        for (BorrowRecord record : records) {
+            Date borrowTime = record.getBorrowTime();
+            long dayCount = (now.getTime() - borrowTime.getTime()) / (1000 * 60 * 60 * 24);
+
+            Book book = bookMapper.selectByPrimaryKey(record.getBookId());
+            SysUser user = sysUserMapper.selectByPrimaryKey(Long.valueOf(record.getUserId()));
+
+            if (book != null && user != null) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("recordId", record.getRecordId());
+                item.put("bookId", book.getBookId());
+                item.put("bookName", book.getBookName());
+                item.put("author", book.getAuthor());
+                item.put("userId", user.getUserId());
+                item.put("userName", user.getUserName());
+                item.put("userAccount", user.getUserAccount());
+                item.put("borrowTime", borrowTime);
+                item.put("daysSinceBorrow", dayCount);
+                item.put("daysRemaining", BORROW_DAYS - dayCount);
+                
+                if (dayCount > BORROW_DAYS) {
+                    item.put("isOverdue", true);
+                    item.put("overdueDays", dayCount - BORROW_DAYS);
+                    item.put("fineMoney", FINE_PER_DAY.multiply(new BigDecimal(dayCount - BORROW_DAYS)));
+                } else {
+                    item.put("isOverdue", false);
+                    item.put("overdueDays", 0);
+                    item.put("fineMoney", new BigDecimal("0.00"));
+                }
+                result.add(item);
+            }
+        }
+
+        result.sort((a, b) -> {
+            Boolean overdueA = (Boolean) a.get("isOverdue");
+            Boolean overdueB = (Boolean) b.get("isOverdue");
+            if (overdueA && !overdueB) return -1;
+            if (!overdueA && overdueB) return 1;
+            Long daysA = (Long) a.get("daysSinceBorrow");
+            Long daysB = (Long) b.get("daysSinceBorrow");
+            return daysB.compareTo(daysA);
+        });
+
+        return result;
+    }
+
+    @Override
     public String remindOverdueUsers(List<Integer> recordIds) {
         // 实际项目中这里会发送短信/邮件通知
         // 目前仅记录操作，返回成功信息

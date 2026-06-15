@@ -1,28 +1,29 @@
 <template>
-  <el-card shadow="hover" title="📚 全馆图书库存管理" style="margin-top: 20px">
+  <el-card class="glass-card" shadow="hover" title="📚 全馆图书库存管理">
     <!-- 搜索栏 -->
-    <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap">
+    <div class="search-bar">
       <el-input
         v-model="keyword"
         placeholder="请输入书名/作者搜索"
         style="width: 250px"
         clearable
+        size="large"
       />
       <el-select
         v-model="category"
         placeholder="请选择图书分类"
         style="width: 180px"
         clearable
+        size="large"
       >
         <el-option label="计算机" value="计算机" />
         <el-option label="文学" value="文学" />
-        <el-option label="文学类" value="文学类" />
         <el-option label="科幻" value="科幻" />
         <el-option label="测试类" value="测试类" />
         <el-option label="历史" value="历史" />
       </el-select>
-      <el-button type="primary" icon="Search" @click="getStockList">搜索</el-button>
-      <el-button @click="resetSearch">重置</el-button>
+      <el-button type="primary" :icon="Search" size="large" @click="getStockList">搜索</el-button>
+      <el-button size="large" @click="resetSearch">重置</el-button>
     </div>
 
     <!-- 库存表格 -->
@@ -51,8 +52,8 @@
     <el-empty description="暂无库存数据" v-if="stockList.length === 0 && !loading" />
 
     <!-- 调整库存弹窗 -->
-    <el-dialog title="调整库存" v-model="showAdjustModal" width="400px">
-      <el-form ref="adjustFormRef" :model="adjustForm" label-width="80px">
+    <el-dialog title="调整库存" v-model="showAdjustModal" width="500px" :fullscreen="false">
+      <el-form ref="adjustFormRef" :model="adjustForm" label-width="100px" style="padding: 10px;">
         <el-form-item label="图书名称">
           <el-input :value="adjustForm.bookName" disabled />
         </el-form-item>
@@ -60,10 +61,10 @@
           <el-input :value="adjustForm.currentStock" disabled />
         </el-form-item>
         <el-form-item label="新库存数量" :required="true">
-          <el-input v-model="adjustForm.newStock" type="number" placeholder="请输入新库存数量" />
+          <el-input v-model="adjustForm.newStock" type="number" placeholder="请输入新库存数量" style="width: 100%;" />
         </el-form-item>
         <el-form-item label="调整原因">
-          <el-input v-model="adjustForm.remark" placeholder="请输入调整原因" />
+          <el-input v-model="adjustForm.remark" placeholder="请输入调整原因" style="width: 100%;" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -77,6 +78,7 @@
 <script setup>
 import { ref, onMounted, getCurrentInstance } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 
@@ -156,3 +158,13 @@ onMounted(() => {
   getStockList()
 })
 </script>
+
+<style scoped>
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+</style>
