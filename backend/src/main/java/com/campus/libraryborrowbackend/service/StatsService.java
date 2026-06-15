@@ -37,14 +37,56 @@ public class StatsService {
     // 1. 基础统计数据（只使用你Mapper里存在的方法）
     public Map<String, Object> getOverview(Integer userId) {
         Map<String, Object> map = new HashMap<>();
-        // 馆藏图书总数
-        map.put("totalBooks", bookMapper.selectByExample(new BookExample()).size());
-        // 已借出图书数
-        map.put("borrowedBooks", borrowRecordMapper.selectByExample(new BorrowRecordExample()).size());
-        // 当前用户借阅数
-        BorrowRecordExample userExample = new BorrowRecordExample();
-        userExample.createCriteria().andUserIdEqualTo(userId);
-        map.put("userBorrowCount", borrowRecordMapper.selectByExample(userExample).size());
+        try {
+            // 获取所有图书 - 使用简化查询方法
+            List<Book> allBooks = bookMapper.selectAllBooks();
+            System.out.println("[DEBUG] 图书查询结果数量: " + (allBooks != null ? allBooks.size() : "null"));
+            
+            // 馆藏图书种类数（不同图书的数量）
+            map.put("bookTypes", allBooks != null ? allBooks.size() : 0);
+            
+            // 馆藏图书总量（所有图书库存之和），处理可能的null值
+            int totalStock = 0;
+            if (allBooks != null && !allBooks.isEmpty()) {
+                for (Book book : allBooks) {
+                    if (book != null && book.getTotalStock() != null) {
+                        totalStock += book.getTotalStock();
+                    }
+                }
+            }
+            map.put("totalStock", totalStock);
+        } catch (Exception e) {
+            System.out.println("[ERROR] 查询图书数据异常: " + e.getMessage());
+            e.printStackTrace();
+            map.put("bookTypes", 0);
+            map.put("totalStock", 0);
+        }
+        
+        try {
+            // 当前用户未归还图书数
+            System.out.println("[DEBUG] 查询用户 " + userId + " 的未归还图书");
+            BorrowRecordExample borrowExample = new BorrowRecordExample();
+            borrowExample.createCriteria().andUserIdEqualTo(userId).andReturnTimeIsNull();
+            List<BorrowRecord> unreturnedList = borrowRecordMapper.selectByExample(borrowExample);
+            int unreturnedCount = unreturnedList != null ? unreturnedList.size() : 0;
+            System.out.println("[DEBUG] 用户 " + userId + " 的未归还图书数量: " + unreturnedCount);
+            map.put("unreturnedBooks", unreturnedCount);
+        } catch (Exception e) {
+            System.out.println("[ERROR] 查询借阅记录异常: " + e.getMessage());
+            e.printStackTrace();
+            map.put("unreturnedBooks", 0);
+        }
+        
+        try {
+            // 当前用户借阅数
+            BorrowRecordExample userExample = new BorrowRecordExample();
+            userExample.createCriteria().andUserIdEqualTo(userId);
+            map.put("userBorrowCount", borrowRecordMapper.selectByExample(userExample).size());
+        } catch (Exception e) {
+            System.out.println("[ERROR] 查询用户借阅记录异常: " + e.getMessage());
+            map.put("userBorrowCount", 0);
+        }
+        
         return map;
     }
 
@@ -58,14 +100,16 @@ public class StatsService {
         trend.put("counts", Arrays.asList(1, 3, 2, 5, 4, 6, 2));
         map.put("trend", trend);
         
-        // 图书分类占比（从数据库查询真实数据）
-        List<Book> allBooks = bookMapper.selectByExample(new BookExample());
+        // 图书分类占比（从数据库查询真实数据）- 使用简化查询方法
+        List<Book> allBooks = bookMapper.selectAllBooks();
         Map<String, Integer> categoryCount = new HashMap<>();
         
-        for (Book book : allBooks) {
-            String category = book.getCategory();
-            if (category != null && !category.isEmpty()) {
-                categoryCount.put(category, categoryCount.getOrDefault(category, 0) + 1);
+        if (allBooks != null && !allBooks.isEmpty()) {
+            for (Book book : allBooks) {
+                String category = book.getCategory();
+                if (category != null && !category.isEmpty()) {
+                    categoryCount.put(category, categoryCount.getOrDefault(category, 0) + 1);
+                }
             }
         }
         
@@ -89,12 +133,18 @@ public class StatsService {
         List<BorrowRecord> records = borrowRecordMapper.selectByExample(example);
 
         // 方案A：冷启动或没查到偏好时，直接返回热门图书
-        if (records.isEmpty()) {
+        if (records == null || records.isEmpty()) {
             // 直接查所有图书，按库存排序，取前5本，确保有数据
-            BookExample bookExample = new BookExample();
-            bookExample.setOrderByClause("total_stock DESC");
-            List<Book> list = bookMapper.selectByExample(bookExample);
-            return list.size() > 5 ? list.subList(0, 5) : list;
+            List<Book> list = bookMapper.selectAllBooks();
+            // 手动排序
+            if (list != null) {
+                list.sort((a, b) -> {
+                    int stockA = a.getTotalStock() != null ? a.getTotalStock() : 0;
+                    int stockB = b.getTotalStock() != null ? b.getTotalStock() : 0;
+                    return Integer.compare(stockB, stockA); // 降序
+                });
+            }
+            return list != null && list.size() > 5 ? list.subList(0, 5) : list;
         }
 
         // 方案B：有借阅记录，按分类推荐
@@ -143,10 +193,16 @@ public class StatsService {
         // 冷启动：无借阅记录 → 直接查询所有图书
         if (borrowRecords == null || borrowRecords.isEmpty()) {
             // 直接查所有图书，兜底确保有数据
-            BookExample bookExample = new BookExample();
-            bookExample.setOrderByClause("total_stock DESC");
-            List<Book> list = bookMapper.selectByExample(bookExample);
-            bookList = list.size() > 5 ? list.subList(0, 5) : list;
+            List<Book> list = bookMapper.selectAllBooks();
+            // 手动排序
+            if (list != null) {
+                list.sort((a, b) -> {
+                    int stockA = a.getTotalStock() != null ? a.getTotalStock() : 0;
+                    int stockB = b.getTotalStock() != null ? b.getTotalStock() : 0;
+                    return Integer.compare(stockB, stockA); // 降序
+                });
+            }
+            bookList = list != null && list.size() > 5 ? list.subList(0, 5) : list;
         } else {
             // 拼接用户阅读历史
             userHistory = borrowRecords.stream()
@@ -179,14 +235,20 @@ public class StatsService {
 
         // 如果 bookList 为空，查询所有图书作为兜底
         if (bookList == null || bookList.isEmpty()) {
-            BookExample bookExample = new BookExample();
-            bookExample.setOrderByClause("total_stock DESC");
-            List<Book> list = bookMapper.selectByExample(bookExample);
-            bookList = list.size() > 5 ? list.subList(0, 5) : list;
+            List<Book> list = bookMapper.selectAllBooks();
+            // 手动排序
+            if (list != null) {
+                list.sort((a, b) -> {
+                    int stockA = a.getTotalStock() != null ? a.getTotalStock() : 0;
+                    int stockB = b.getTotalStock() != null ? b.getTotalStock() : 0;
+                    return Integer.compare(stockB, stockA); // 降序
+                });
+            }
+            bookList = list != null && list.size() > 5 ? list.subList(0, 5) : list;
         }
 
         // 如果还是空，直接返回空列表
-        if (bookList.isEmpty()) {
+        if (bookList == null || bookList.isEmpty()) {
             return new ArrayList<>();
         }
 

@@ -1,9 +1,10 @@
 <template>
   <el-card shadow="hover" title="📊 数据统计 & AI智能推荐" style="margin: 20px;">
     <!-- 1. 顶部统计卡片 -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px;">
-      <el-statistic title="馆藏图书总数" :value="stats.totalBooks" suffix="本" />
-      <el-statistic title="已借出图书" :value="stats.borrowedBooks" suffix="本" />
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px;">
+      <el-statistic title="馆藏图书种类" :value="stats.bookTypes" suffix="种" />
+      <el-statistic title="馆藏图书总量" :value="stats.totalStock" suffix="本" />
+      <el-statistic title="未归还图书" :value="stats.unreturnedBooks" suffix="本" />
       <el-statistic title="我的借阅数" :value="stats.userBorrowCount" suffix="本" />
     </div>
 
@@ -14,7 +15,7 @@
         <div ref="trendChartRef" style="width: 100%; height: 250px;"></div>
       </div>
       <div style="flex: 1; height: 300px;">
-        <h4>📊 图书分类占比</h4>
+        <h4>📊 馆藏图书分类占比</h4>
         <div ref="pieChartRef" style="width: 100%; height: 250px;"></div>
       </div>
     </div>
@@ -65,7 +66,20 @@
         <el-table-column prop="bookName" label="图书名称" />
         <el-table-column prop="author" label="作者" />
         <el-table-column prop="category" label="图书分类" />
+        <el-table-column prop="remainStock" label="剩余库存" align="center" />
         <el-table-column prop="reason" label="AI推荐理由" width="300" />
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="{ row }">
+            <el-button
+              type="success"
+              size="small"
+              :disabled="row.remainStock <= 0"
+              @click="handleAiBorrow(row)"
+            >
+              借阅
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
       <el-empty
         v-if="!aiLoading && aiRecommendList.length === 0"
@@ -95,8 +109,9 @@ let pieChart = null
 
 // 页面数据
 const stats = ref({
-  totalBooks: 0,
-  borrowedBooks: 0,
+  bookTypes: 0,
+  totalStock: 0,
+  unreturnedBooks: 0,
   userBorrowCount: 0
 })
 const normalRecommendList = ref([])
@@ -112,9 +127,20 @@ const AI_RECOMMEND_THRESHOLD = 3
 
 // 从本地存储获取登录用户ID
 const getUserId = () => {
-  const userInfo = localStorage.getItem('userInfo')
-  if (!userInfo) return null
-  return JSON.parse(userInfo).userId
+  const userInfoStr = localStorage.getItem('userInfo')
+  if (!userInfoStr) {
+    console.log('[DEBUG] localStorage 中没有 userInfo')
+    return null
+  }
+  try {
+    const userInfo = JSON.parse(userInfoStr)
+    console.log('[DEBUG] 获取到的用户信息:', userInfo)
+    console.log('[DEBUG] 用户ID:', userInfo.userId)
+    return userInfo.userId
+  } catch (e) {
+    console.log('[DEBUG] 解析用户信息失败:', e)
+    return null
+  }
 }
 
 // 初始化双图表（加强空数据容错）
@@ -163,7 +189,7 @@ const initEcharts = (trendData, categoryData) => {
   })
 }
 
-// 借阅操作
+// 常规推荐借阅操作
 const handleBorrow = async (bookBarcode) => {
   try {
     const res = await axios.post('/borrow/add', null, {
@@ -172,6 +198,31 @@ const handleBorrow = async (bookBarcode) => {
     if (res.data.code === 200) {
       ElMessage.success('借阅成功')
       loadAllData()
+    }
+  } catch (err) {
+    ElMessage.error('借阅操作失败')
+  }
+}
+
+// AI推荐借阅操作（需要先通过书名查询图书条码）
+const handleAiBorrow = async (row) => {
+  try {
+    // 优先使用条码
+    if (row.bookBarcode) {
+      await handleBorrow(row.bookBarcode)
+      return
+    }
+    
+    // 如果没有条码，通过书名查询图书信息
+    const searchRes = await axios.get('/book/search', {
+      params: { keyword: row.bookName }
+    })
+    
+    if (searchRes.data.code === 200 && searchRes.data.data && searchRes.data.data.length > 0) {
+      const book = searchRes.data.data[0]
+      await handleBorrow(book.bookBarcode)
+    } else {
+      ElMessage.warning('未找到该图书')
     }
   } catch (err) {
     ElMessage.error('借阅操作失败')
@@ -192,20 +243,21 @@ const loadAllData = async () => {
   userId = Number(userId)
 
   // 1. 加载基础统计数据
-  try {
-    const statsRes = await axios.get('/stats/overview', {
-      params: { userId }
-    })
-    if (statsRes.data && statsRes.data.code === 200 && statsRes.data.data) {
-      stats.value = {
-        totalBooks: statsRes.data.data.totalBooks || 0,
-        borrowedBooks: statsRes.data.data.borrowedBooks || 0,
-        userBorrowCount: statsRes.data.data.userBorrowCount || 0
+    try {
+      const statsRes = await axios.get('/stats/overview', {
+        params: { userId }
+      })
+      if (statsRes.data && statsRes.data.code === 200 && statsRes.data.data) {
+        stats.value = {
+          bookTypes: statsRes.data.data.bookTypes || 0,
+          totalStock: statsRes.data.data.totalStock || 0,
+          unreturnedBooks: statsRes.data.data.unreturnedBooks || 0,
+          userBorrowCount: statsRes.data.data.userBorrowCount || 0
+        }
       }
+    } catch (err) {
+      ElMessage.error('统计数据加载失败')
     }
-  } catch (err) {
-    ElMessage.error('统计数据加载失败')
-  }
 
   // 2. 加载图表数据（增加多层判断）
   try {

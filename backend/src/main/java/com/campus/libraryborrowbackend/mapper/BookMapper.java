@@ -55,5 +55,10 @@ public interface BookMapper {
      */
     List<AiBookDTO> selectHotBooksForColdStart();
 
+    /**
+     * 查询所有图书（简化版，不使用Example）
+     */
+    List<Book> selectAllBooks();
+
 
 }

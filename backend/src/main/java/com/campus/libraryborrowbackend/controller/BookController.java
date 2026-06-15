@@ -62,12 +62,14 @@ public class BookController {
     }
 
     /**
-     * 获取全馆图书库存
-     * 接口地址：GET /book/stock
+     * 获取全馆图书库存（支持关键词搜索和分类筛选）
+     * 接口地址：GET /book/stock?keyword=xxx&category=xxx
      */
     @GetMapping("/stock")
-    public Result<List<Map<String, Object>>> getAllBookStock() {
-        List<Map<String, Object>> stockList = bookService.getAllBookStock();
+    public Result<List<Map<String, Object>>> getAllBookStock(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category) {
+        List<Map<String, Object>> stockList = bookService.getAllBookStock(keyword, category);
         return Result.success(stockList);
     }
 }

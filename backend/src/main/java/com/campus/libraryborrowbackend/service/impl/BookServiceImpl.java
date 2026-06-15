@@ -28,6 +28,19 @@ public class BookServiceImpl implements BookService {
     @Override
     public List<Book> getBookList(String keyword, String category, String sortField, String sortOrder) {
         BookExample example = new BookExample();
+        BookExample.Criteria criteria = example.createCriteria();
+        
+        // 添加关键词搜索条件（书名或作者）
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String searchKeyword = "%" + keyword.trim() + "%";
+            criteria.andBookNameLike(searchKeyword);
+            example.or(example.createCriteria().andAuthorLike(searchKeyword));
+        }
+        
+        // 添加分类筛选条件
+        if (category != null && !category.trim().isEmpty()) {
+            criteria.andCategoryEqualTo(category.trim());
+        }
         
         // 设置排序 - 需要将前端的驼峰命名转换为数据库的下划线命名
         if (sortField != null && !sortField.trim().isEmpty()) {
@@ -121,10 +134,24 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public List<Map<String, Object>> getAllBookStock() {
+    public List<Map<String, Object>> getAllBookStock(String keyword, String category) {
         List<Map<String, Object>> result = new ArrayList<>();
 
         BookExample example = new BookExample();
+        BookExample.Criteria criteria = example.createCriteria();
+
+        // 添加关键词搜索条件（书名或作者）
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String searchKeyword = "%" + keyword.trim() + "%";
+            criteria.andBookNameLike(searchKeyword);
+            example.or(example.createCriteria().andAuthorLike(searchKeyword));
+        }
+
+        // 添加分类筛选条件
+        if (category != null && !category.trim().isEmpty()) {
+            criteria.andCategoryEqualTo(category.trim());
+        }
+
         List<Book> books = bookMapper.selectByExample(example);
 
         for (Book book : books) {
@@ -141,6 +168,7 @@ public class BookServiceImpl implements BookService {
 
             Map<String, Object> item = new HashMap<>();
             item.put("bookId", book.getBookId());
+            item.put("bookBarcode", book.getBookBarcode());
             item.put("bookName", book.getBookName());
             item.put("author", book.getAuthor());
             item.put("category", book.getCategory());

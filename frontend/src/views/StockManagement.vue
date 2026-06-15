@@ -1,13 +1,26 @@
 <template>
   <el-card shadow="hover" title="📚 全馆图书库存管理" style="margin-top: 20px">
     <!-- 搜索栏 -->
-    <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center">
+    <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap">
       <el-input
         v-model="keyword"
         placeholder="请输入书名/作者搜索"
-        style="width: 300px"
+        style="width: 250px"
         clearable
       />
+      <el-select
+        v-model="category"
+        placeholder="请选择图书分类"
+        style="width: 180px"
+        clearable
+      >
+        <el-option label="计算机" value="计算机" />
+        <el-option label="文学" value="文学" />
+        <el-option label="文学类" value="文学类" />
+        <el-option label="科幻" value="科幻" />
+        <el-option label="测试类" value="测试类" />
+        <el-option label="历史" value="历史" />
+      </el-select>
       <el-button type="primary" icon="Search" @click="getStockList">搜索</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </div>
@@ -70,6 +83,7 @@ const { proxy } = getCurrentInstance()
 const stockList = ref([])
 const loading = ref(false)
 const keyword = ref('')
+const category = ref('')
 const showAdjustModal = ref(false)
 const adjustForm = ref({
   bookId: null,
@@ -82,7 +96,9 @@ const adjustForm = ref({
 const getStockList = async () => {
   loading.value = true
   try {
-    const params = keyword.value ? { keyword: keyword.value } : {}
+    const params = {}
+    if (keyword.value) params.keyword = keyword.value
+    if (category.value) params.category = category.value
     const res = await proxy.$axios.get('/book/stock', { params })
     if (res.data.code === 200) {
       stockList.value = res.data.data || []
@@ -98,6 +114,7 @@ const getStockList = async () => {
 
 const resetSearch = () => {
   keyword.value = ''
+  category.value = ''
   getStockList()
 }
 

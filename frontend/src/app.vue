@@ -8,7 +8,7 @@
         身份：师生
       </span>
       <div class="nav-btn">
-        <el-button @click="$router.push('/ocr')">自助借还</el-button>
+        <el-button @click="$router.push('/ocr')">扫码借书</el-button>
         <el-button @click="$router.push('/bookList')">图书列表</el-button>
         <el-button @click="$router.push('/borrowRecord')">我的借阅记录</el-button>
         <el-button @click="$router.push('/chart')">数据统计</el-button>

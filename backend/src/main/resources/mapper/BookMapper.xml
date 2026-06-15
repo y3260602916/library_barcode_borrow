@@ -91,6 +91,11 @@
     </if>
   </select>
 
+  <!-- 查询所有图书（简化版） -->
+  <select id="selectAllBooks" resultMap="BaseResultMap">
+    select book_id, book_name, author, category, book_barcode, total_stock, remain_stock from book_info
+  </select>
+
   <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
     select <include refid="Base_Column_List" />
     from book_info

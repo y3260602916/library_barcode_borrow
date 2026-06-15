@@ -33,8 +33,10 @@ public interface BookService {
     String adjustStock(Integer bookId, Integer newStock, String remark);
 
     /**
-     * 获取全馆图书库存
+     * 获取全馆图书库存（支持关键词搜索和分类筛选）
+     * @param keyword 搜索关键词（书名或作者）
+     * @param category 图书分类
      * @return 库存列表
      */
-    List<Map<String, Object>> getAllBookStock();
+    List<Map<String, Object>> getAllBookStock(String keyword, String category);
 }

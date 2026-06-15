@@ -1,9 +1,5 @@
 <template>
   <div style="padding: 20px;">
-    <div style="margin-bottom: 16px;">
-      当前登录：{{ userName }} | 身份：师生
-    </div>
-
     <!-- 摄像头和图书信息并排显示 -->
     <div style="display: flex; gap: 24px; margin-bottom: 16px;">
       <!-- 摄像头区域 -->
@@ -16,7 +12,13 @@
             muted
             style="width: 100%; height: 100%; object-fit: cover;"
           ></video>
-          <div class="scan-frame"></div>
+          <!-- 扫描框四角 -->
+          <div class="scan-corner top-left"></div>
+          <div class="scan-corner top-right"></div>
+          <div class="scan-corner bottom-left"></div>
+          <div class="scan-corner bottom-right"></div>
+          <!-- 扫描线动画 -->
+          <div class="scan-line"></div>
           <canvas ref="canvasRef" style="display: none;"></canvas>
         </div>
 
@@ -119,6 +121,8 @@ const videoRef = ref(null)
 const canvasRef = ref(null)
 const cameraStatus = ref(false)
 let mediaStream = null
+let scanTimer = null // 扫描定时器
+let barcodeDetector = null // BarcodeDetector 实例
 
 const FRAME_WIDTH = 360
 const FRAME_HEIGHT = 100
@@ -128,6 +132,7 @@ const bookInfo = ref(null)
 const userId = ref(null)
 const userName = ref('')
 const fromCamera = ref(false)
+const scanning = ref(false) // 是否正在扫描
 
 onMounted(() => {
   const user = localStorage.getItem('userInfo')
@@ -137,9 +142,23 @@ onMounted(() => {
     userName.value = userData.userName
   }
   sessionStorage.removeItem('scanFlag')
+  
+  // 检查浏览器是否支持 BarcodeDetector
+  if ('BarcodeDetector' in window) {
+    BarcodeDetector.getSupportedFormats().then(formats => {
+      console.log('支持的条码格式:', formats)
+    })
+  }
 })
 
 const closeCamera = () => {
+  // 停止扫描
+  if (scanTimer) {
+    cancelAnimationFrame(scanTimer)
+    scanTimer = null
+  }
+  scanning.value = false
+  
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop())
     mediaStream = null
@@ -158,13 +177,20 @@ const openCamera = async () => {
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: 'environment'
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
       },
       audio: false
     })
     videoRef.value.srcObject = mediaStream
     cameraStatus.value = true
-    ElMessage.success('摄像头开启成功')
+    ElMessage.success('摄像头开启成功，请将条形码对准扫描框')
+    
+    // 等待视频加载完成后开始扫描
+    videoRef.value.onloadedmetadata = () => {
+      startRealtimeScan()
+    }
   } catch (err) {
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
       ElMessage.error('摄像头权限被拒绝，请在浏览器设置中允许摄像头权限')
@@ -174,6 +200,109 @@ const openCamera = async () => {
       ElMessage.error('摄像头调用失败：' + err.message)
     }
     console.error('摄像头错误:', err)
+  }
+}
+
+// 实时扫描条码
+const startRealtimeScan = async () => {
+  if (!cameraStatus.value || !videoRef.value) return
+  
+  scanning.value = true
+  
+  // 优先使用浏览器原生 BarcodeDetector API
+  if ('BarcodeDetector' in window) {
+    try {
+      barcodeDetector = new BarcodeDetector({
+        formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'code_93', 'codabar', 'upc_a', 'upc_e']
+      })
+      scanWithBarcodeDetector()
+      return
+    } catch (e) {
+      console.warn('BarcodeDetector 初始化失败，使用备选方案:', e)
+    }
+  }
+  
+  // 备选方案：使用 canvas 截图上传识别
+  scanWithCanvas()
+}
+
+// 使用 BarcodeDetector 实时扫描
+const scanWithBarcodeDetector = async () => {
+  if (!scanning.value || !cameraStatus.value) return
+  
+  try {
+    const barcodes = await barcodeDetector.detect(videoRef.value)
+    if (barcodes.length > 0) {
+      const detectedBarcode = barcodes[0].rawValue
+      barcode.value = detectedBarcode
+      fromCamera.value = true
+      sessionStorage.setItem('scanFlag', 'valid')
+      ElMessage.success('识别成功：' + detectedBarcode)
+      scanning.value = false
+      await queryBookInfo()
+      return
+    }
+  } catch (e) {
+    console.error('扫描错误:', e)
+  }
+  
+  // 继续扫描
+  scanTimer = requestAnimationFrame(scanWithBarcodeDetector)
+}
+
+// 备选方案：canvas 截图上传识别
+const scanWithCanvas = () => {
+  if (!scanning.value || !cameraStatus.value) return
+  
+  const video = videoRef.value
+  const canvas = canvasRef.value
+  const ctx = canvas.getContext('2d')
+  
+  const vw = video.videoWidth
+  const vh = video.videoHeight
+  const cropX = (vw - FRAME_WIDTH) / 2
+  const cropY = (vh - FRAME_HEIGHT) / 2
+  
+  canvas.width = FRAME_WIDTH
+  canvas.height = FRAME_HEIGHT
+  ctx.drawImage(video, cropX, cropY, FRAME_WIDTH, FRAME_HEIGHT, 0, 0, FRAME_WIDTH, FRAME_HEIGHT)
+  
+  canvas.toBlob((blob) => {
+    if (blob) {
+      uploadPhotoForScan(blob)
+    }
+  }, 'image/jpeg', 0.8)
+}
+
+// 上传图片识别（备选方案）
+const uploadPhotoForScan = async (blob) => {
+  const file = new File([blob], "barcode.jpg", { type: "image/jpeg" })
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  try {
+    const res = await axios.post('/barcode/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 3000
+    })
+    if (res.data.code === 200 && res.data.data.bookBarcode) {
+      barcode.value = res.data.data.bookBarcode
+      fromCamera.value = true
+      sessionStorage.setItem('scanFlag', 'valid')
+      ElMessage.success('识别成功：' + res.data.data.bookBarcode)
+      scanning.value = false
+      await queryBookInfo()
+      return
+    }
+  } catch (err) {
+    // 忽略错误，继续扫描
+  }
+  
+  // 继续扫描
+  if (scanning.value && cameraStatus.value) {
+    setTimeout(() => {
+      scanTimer = requestAnimationFrame(scanWithCanvas)
+    }, 500) // 每500ms扫描一次
   }
 }
 
@@ -204,8 +333,9 @@ const resetPreview = () => {
   bookInfo.value = null
   fromCamera.value = false
   sessionStorage.removeItem('scanFlag')
-  if (cameraStatus.value && videoRef.value) {
-    videoRef.value.play()
+  // 重新开始扫描
+  if (cameraStatus.value) {
+    startRealtimeScan()
   }
 }
 
@@ -221,6 +351,7 @@ const uploadPhoto = async (file) => {
       fromCamera.value = true
       sessionStorage.setItem('scanFlag', 'valid')
       ElMessage.success('识别成功')
+      scanning.value = false
       await queryBookInfo()
     } else {
       ElMessage.error(res.data.msg || '识别失败')
@@ -299,10 +430,74 @@ const canBorrow = computed(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 360px;
-  height: 100px;
+  width: 280px;
+  height: 80px;
   border: 2px solid #409eff;
-  box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+  border-radius: 8px;
   pointer-events: none;
+  background: transparent;
+}
+/* 扫描线动画 */
+.scan-line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 80px;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 8px;
+}
+.scan-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #409eff, transparent);
+  animation: scanMove 2s linear infinite;
+}
+@keyframes scanMove {
+  0% { top: 0; }
+  50% { top: calc(100% - 2px); }
+  100% { top: 0; }
+}
+/* 四角标记 */
+.scan-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #409eff;
+  pointer-events: none;
+}
+.scan-corner.top-left {
+  top: calc(50% - 43px);
+  left: calc(50% - 143px);
+  border-right: none;
+  border-bottom: none;
+  border-radius: 8px 0 0 0;
+}
+.scan-corner.top-right {
+  top: calc(50% - 43px);
+  left: calc(50% + 123px);
+  border-left: none;
+  border-bottom: none;
+  border-radius: 0 8px 0 0;
+}
+.scan-corner.bottom-left {
+  top: calc(50% + 23px);
+  left: calc(50% - 143px);
+  border-right: none;
+  border-top: none;
+  border-radius: 0 0 8px 0;
+}
+.scan-corner.bottom-right {
+  top: calc(50% + 23px);
+  left: calc(50% + 123px);
+  border-left: none;
+  border-top: none;
+  border-radius: 0 0 0 8px;
 }
 </style>
