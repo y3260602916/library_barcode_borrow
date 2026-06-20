@@ -7,20 +7,14 @@ import com.campus.libraryborrowbackend.mapper.ScanRecordMapper;
 import com.campus.libraryborrowbackend.service.BarcodeService;
 import com.campus.libraryborrowbackend.util.PythonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.UUID;
 
 @Service
 public class BarcodeServiceImpl implements BarcodeService {
-
-    @Value("${python.upload-path}")
-    private String uploadPath;
 
     @Autowired
     private PythonUtil pythonUtil;
@@ -38,72 +32,55 @@ public class BarcodeServiceImpl implements BarcodeService {
             throw new RuntimeException("请上传图片文件");
         }
 
-        // 2. 创建上传目录
-        File uploadDir = new File(uploadPath);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
-        }
-
-        // 拼接文件名
-        String suffix = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
-        String fileName = UUID.randomUUID() + "_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + suffix;
-        File targetFile = new File(uploadPath, fileName);
-        String imgFullPath = targetFile.getAbsolutePath();
-
-        // 3. 保存文件
+        // 2. 临时保存文件（供Python识别使用）
+        File tempFile = null;
         try {
-            file.transferTo(targetFile);
+            // 创建临时文件
+            tempFile = File.createTempFile("barcode_", ".jpg");
+            file.transferTo(tempFile);
+
+            // 3. 调用Python识别条码
+            String barcode = pythonUtil.getBarcode(tempFile.getAbsolutePath());
+            
+            // 4. 清理临时文件
+            tempFile.delete();
+            
+            if (barcode == null || barcode.trim().isEmpty()) {
+                throw new RuntimeException("条码识别失败，请重新上传清晰的图片");
+            }
+
+            // 过滤非数字
+            barcode = barcode.trim().replaceAll("[^0-9]", "");
+            System.out.println("最终用于查询的条码：=====" + barcode + "=====");
+
+            if (barcode.isEmpty()) {
+                throw new RuntimeException("未识别到有效条码");
+            }
+
+            // 5. 识别成功，写入日志（仅记录识别信息，不再记录图片路径）
+            ScanRecord successRecord = new ScanRecord();
+            successRecord.setScanBarcode(barcode);
+            successRecord.setScanTime(new Date());
+            successRecord.setResult("成功");
+            scanRecordMapper.insert(successRecord);
+
+            // 6. 查询图书
+            Book book = bookMapper.selectBookByBarcode(barcode);
+            if (book == null) {
+                throw new RuntimeException("未找到条码为 " + barcode + " 的图书信息");
+            }
+            return book;
+            
+        } catch (RuntimeException e) {
+            // 业务异常直接抛出
+            throw e;
         } catch (Exception e) {
-            // 保存失败，写入日志
-            ScanRecord failRecord = new ScanRecord();
-            failRecord.setImgPath(imgFullPath);
-            failRecord.setScanBarcode("");
-            failRecord.setScanTime(new Date());
-            failRecord.setResult("失败");
-            scanRecordMapper.insert(failRecord);
-            throw new RuntimeException("文件保存失败：" + e.getMessage());
+            // 清理临时文件
+            if (tempFile != null && tempFile.exists()) {
+                tempFile.delete();
+            }
+            throw new RuntimeException("文件处理失败：" + e.getMessage());
         }
-
-        // 4. 调用Python识别条码
-        String barcode = pythonUtil.getBarcode(targetFile.getAbsolutePath());
-        if (barcode == null || barcode.trim().isEmpty()) {
-            ScanRecord failRecord = new ScanRecord();
-            failRecord.setImgPath(imgFullPath);
-            failRecord.setScanBarcode("");
-            failRecord.setScanTime(new Date());
-            failRecord.setResult("失败");
-            scanRecordMapper.insert(failRecord);
-            throw new RuntimeException("条码识别失败，请重新上传清晰的图片");
-        }
-
-        // 过滤非数字
-        barcode = barcode.trim().replaceAll("[^0-9]", "");
-        System.out.println("最终用于查询的条码：=====" + barcode + "=====");
-
-        if (barcode.isEmpty()) {
-            ScanRecord failRecord = new ScanRecord();
-            failRecord.setImgPath(imgFullPath);
-            failRecord.setScanBarcode("");
-            failRecord.setScanTime(new Date());
-            failRecord.setResult("失败");
-            scanRecordMapper.insert(failRecord);
-            throw new RuntimeException("未识别到有效条码");
-        }
-
-        // 5. 识别成功，写入日志
-        ScanRecord successRecord = new ScanRecord();
-        successRecord.setImgPath(imgFullPath);
-        successRecord.setScanBarcode(barcode);
-        successRecord.setScanTime(new Date());
-        successRecord.setResult("成功");
-        scanRecordMapper.insert(successRecord);
-
-        // 6. 查询图书
-        Book book = bookMapper.selectBookByBarcode(barcode);
-        if (book == null) {
-            throw new RuntimeException("未找到条码为 " + barcode + " 的图书信息");
-        }
-        return book;
     }
 
     @Override

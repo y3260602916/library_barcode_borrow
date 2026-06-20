@@ -76,10 +76,8 @@
         </div>
 
         <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-          <el-button type="primary" @click="openCamera" :disabled="cameraStatus">开启摄像头</el-button>
+          <el-button type="success" @click="openCamera" :disabled="cameraStatus">开启摄像头</el-button>
           <el-button type="danger" @click="closeCamera" :disabled="!cameraStatus">关闭摄像头</el-button>
-          <el-button type="success" @click="takePhoto" :disabled="!cameraStatus">拍照识别</el-button>
-          <el-button type="text" @click="resetPreview">重新拍摄</el-button>
         </div>
 
         <div style="display: flex; gap: 8px; align-items: center;">
@@ -144,8 +142,8 @@ const cameraStatus = ref(false);
 let mediaStream = null;
 let scanTimer = null;
 let barcodeDetector = null;
-const FRAME_WIDTH = 360;
-const FRAME_HEIGHT = 100;
+const FRAME_WIDTH = 480;
+const FRAME_HEIGHT = 320;
 const barcode = ref('');
 const scanValid = ref(false);
 const scanning = ref(false);
@@ -320,8 +318,14 @@ const scanWithBarcodeDetector = async () => {
       barcode.value = detectedBarcode;
       scanValid.value = true;
       sessionStorage.setItem('scanFlag', 'valid');
-      ElMessage.success('识别成功：' + detectedBarcode);
       scanning.value = false;
+      ElMessage.success('识别成功：' + detectedBarcode);
+      
+      // 识别成功后自动关闭摄像头
+      setTimeout(() => {
+        closeCamera();
+      }, 500);
+      
       return;
     }
   } catch (e) {
@@ -371,8 +375,14 @@ const uploadPhotoForScan = async (blob) => {
       barcode.value = res.data.data.bookBarcode;
       scanValid.value = true;
       sessionStorage.setItem('scanFlag', 'valid');
-      ElMessage.success('识别成功：' + res.data.data.bookBarcode);
       scanning.value = false;
+      ElMessage.success('识别成功：' + res.data.data.bookBarcode);
+      
+      // 识别成功后自动关闭摄像头
+      setTimeout(() => {
+        closeCamera();
+      }, 500);
+      
       return;
     }
   } catch (err) {
@@ -384,65 +394,6 @@ const uploadPhotoForScan = async (blob) => {
     setTimeout(() => {
       scanTimer = requestAnimationFrame(scanWithCanvas);
     }, 500);
-  }
-};
-
-const takePhoto = () => {
-  if (!cameraStatus.value) return;
-  
-  const video = videoRef.value;
-  const canvas = canvasRef.value;
-  const ctx = canvas.getContext('2d');
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  const cropX = (vw - FRAME_WIDTH) / 2;
-  const cropY = (vh - FRAME_HEIGHT) / 2;
-  
-  canvas.width = FRAME_WIDTH;
-  canvas.height = FRAME_HEIGHT;
-  ctx.drawImage(video, cropX, cropY, FRAME_WIDTH, FRAME_HEIGHT, 0, 0, FRAME_WIDTH, FRAME_HEIGHT);
-  
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const file = new File([blob], "barcode.jpg", { type: "image/jpeg" });
-    uploadPhoto(file);
-  }, 'image/jpeg');
-};
-
-const resetPreview = () => {
-  barcode.value = '';
-  scanValid.value = false;
-  sessionStorage.removeItem('scanFlag');
-  // 重新开始扫描
-  if (cameraStatus.value) {
-    startRealtimeScan();
-  }
-};
-
-const uploadPhoto = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  try {
-    const res = await axios.post('/barcode/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    if (res.data.code === 200) {
-      barcode.value = res.data.data.bookBarcode;
-      scanValid.value = true;
-      sessionStorage.setItem('scanFlag', 'valid');
-      ElMessage.success('识别成功');
-      scanning.value = false;
-    } else {
-      ElMessage.error(res.data.msg || '识别失败');
-      scanValid.value = false;
-      sessionStorage.removeItem('scanFlag');
-    }
-  } catch (err) {
-    ElMessage.error('上传失败');
-    console.error(err);
-    scanValid.value = false;
-    sessionStorage.removeItem('scanFlag');
   }
 };
 

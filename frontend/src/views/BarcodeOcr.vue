@@ -23,10 +23,15 @@
         </div>
 
         <div style="display: flex; gap: 12px; margin-top: 16px;">
-          <el-button type="success" @click="openCamera" :disabled="cameraStatus">开启摄像头</el-button>
+          <!-- 开启摄像头/重新识别按钮 -->
+          <el-button 
+            type="success" 
+            @click="handleCameraToggle" 
+            :disabled="scanning"
+          >
+            {{ hasScanned ? '重新识别' : '开启摄像头' }}
+          </el-button>
           <el-button type="danger" @click="closeCamera" :disabled="!cameraStatus">关闭摄像头</el-button>
-          <el-button type="success" @click="takePhoto" :disabled="!cameraStatus">拍照识别</el-button>
-          <el-button type="text" @click="resetPreview">重新拍摄</el-button>
         </div>
 
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 16px;">
@@ -124,8 +129,8 @@ let mediaStream = null
 let scanTimer = null // 扫描定时器
 let barcodeDetector = null // BarcodeDetector 实例
 
-const FRAME_WIDTH = 360
-const FRAME_HEIGHT = 100
+const FRAME_WIDTH = 480
+const FRAME_HEIGHT = 320
 
 const barcode = ref('')
 const bookInfo = ref(null)
@@ -133,6 +138,8 @@ const userId = ref(null)
 const userName = ref('')
 const fromCamera = ref(false)
 const scanning = ref(false) // 是否正在扫描
+const hasScanned = ref(false) // 是否已经扫描成功过
+const borrowClicked = ref(false) // 借阅按钮是否已点击过
 
 onMounted(() => {
   const user = localStorage.getItem('userInfo')
@@ -172,6 +179,23 @@ const closeCamera = () => {
 onUnmounted(() => {
   closeCamera()
 })
+
+// 摄像头切换处理（开启摄像头/重新识别）
+const handleCameraToggle = async () => {
+  if (hasScanned.value) {
+    // 重新识别：清空数据，重新开始扫描
+    barcode.value = ''
+    bookInfo.value = null
+    fromCamera.value = false
+    hasScanned.value = false
+    borrowClicked.value = false // 重置借阅按钮状态
+    sessionStorage.removeItem('scanFlag')
+    ElMessage.info('准备重新识别，请将条形码对准扫描框')
+  }
+  
+  // 开启摄像头并开始扫描
+  await openCamera()
+}
 
 const openCamera = async () => {
   try {
@@ -237,8 +261,15 @@ const scanWithBarcodeDetector = async () => {
       barcode.value = detectedBarcode
       fromCamera.value = true
       sessionStorage.setItem('scanFlag', 'valid')
-      ElMessage.success('识别成功：' + detectedBarcode)
+      hasScanned.value = true // 标记已扫描成功
       scanning.value = false
+      ElMessage.success('识别成功：' + detectedBarcode)
+      
+      // 自动关闭摄像头
+      setTimeout(() => {
+        closeCamera()
+      }, 500)
+      
       await queryBookInfo()
       return
     }
@@ -285,17 +316,38 @@ const uploadPhotoForScan = async (blob) => {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 3000
     })
-    if (res.data.code === 200 && res.data.data.bookBarcode) {
-      barcode.value = res.data.data.bookBarcode
-      fromCamera.value = true
-      sessionStorage.setItem('scanFlag', 'valid')
-      ElMessage.success('识别成功：' + res.data.data.bookBarcode)
-      scanning.value = false
-      await queryBookInfo()
-      return
+    console.log('后端响应:', res.data) // 调试日志
+    
+    if (res.data.code === 200) {
+      // 后端返回的是完整的Book对象
+      if (res.data.data) {
+        barcode.value = res.data.data.bookBarcode || res.data.data
+        bookInfo.value = typeof res.data.data === 'object' ? res.data.data : null
+        fromCamera.value = true
+        sessionStorage.setItem('scanFlag', 'valid')
+        hasScanned.value = true // 标记已扫描成功
+        scanning.value = false
+        ElMessage.success('识别成功：' + barcode.value)
+        
+        // 自动关闭摄像头
+        setTimeout(() => {
+          closeCamera()
+        }, 500)
+        
+        // 如果返回的是完整图书对象，无需再查询
+        if (bookInfo.value) {
+          return
+        }
+        await queryBookInfo()
+      } else {
+        console.warn('后端返回成功但data为空')
+      }
+    } else {
+      // 识别成功但数据库中没有找到图书
+      ElMessage.warning(res.data.msg || '识别成功，但未找到图书信息')
     }
   } catch (err) {
-    // 忽略错误，继续扫描
+    console.error('上传识别失败:', err)
   }
   
   // 继续扫描
@@ -303,66 +355,6 @@ const uploadPhotoForScan = async (blob) => {
     setTimeout(() => {
       scanTimer = requestAnimationFrame(scanWithCanvas)
     }, 500) // 每500ms扫描一次
-  }
-}
-
-const takePhoto = () => {
-  if (!cameraStatus.value) return
-  const video = videoRef.value
-  const canvas = canvasRef.value
-  const ctx = canvas.getContext('2d')
-
-  const vw = video.videoWidth
-  const vh = video.videoHeight
-  const cropX = (vw - FRAME_WIDTH) / 2
-  const cropY = (vh - FRAME_HEIGHT) / 2
-
-  canvas.width = FRAME_WIDTH
-  canvas.height = FRAME_HEIGHT
-  ctx.drawImage(video, cropX, cropY, FRAME_WIDTH, FRAME_HEIGHT, 0, 0, FRAME_WIDTH, FRAME_HEIGHT)
-
-  canvas.toBlob((blob) => {
-    if (!blob) return
-    const file = new File([blob], "barcode.jpg", { type: "image/jpeg" })
-    uploadPhoto(file)
-  }, 'image/jpeg')
-}
-
-const resetPreview = () => {
-  barcode.value = ''
-  bookInfo.value = null
-  fromCamera.value = false
-  sessionStorage.removeItem('scanFlag')
-  // 重新开始扫描
-  if (cameraStatus.value) {
-    startRealtimeScan()
-  }
-}
-
-const uploadPhoto = async (file) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  try {
-    const res = await axios.post('/barcode/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    if (res.data.code === 200) {
-      barcode.value = res.data.data.bookBarcode
-      fromCamera.value = true
-      sessionStorage.setItem('scanFlag', 'valid')
-      ElMessage.success('识别成功')
-      scanning.value = false
-      await queryBookInfo()
-    } else {
-      ElMessage.error(res.data.msg || '识别失败')
-      fromCamera.value = false
-      sessionStorage.removeItem('scanFlag')
-    }
-  } catch (err) {
-    ElMessage.error('上传失败')
-    console.error(err)
-    fromCamera.value = false
-    sessionStorage.removeItem('scanFlag')
   }
 }
 
@@ -384,6 +376,10 @@ const queryBookInfo = async () => {
 }
 
 const handleBorrow = async () => {
+  if (borrowClicked.value) {
+    ElMessage.warning('该图书已办理借阅，请重新扫描其他图书')
+    return
+  }
   if (!userId.value) {
     ElMessage.warning('请先登录')
     return
@@ -397,6 +393,7 @@ const handleBorrow = async () => {
     return
   }
   try {
+    borrowClicked.value = true // 标记已点击借阅按钮
     const res = await axios.post('/borrow/add', null, {
       params: {
         userId: userId.value,
@@ -408,9 +405,11 @@ const handleBorrow = async () => {
       sessionStorage.removeItem('scanFlag')
       await queryBookInfo()
     } else {
+      borrowClicked.value = false // 借阅失败，允许重新点击
       ElMessage.error(res.data.msg)
     }
   } catch (err) {
+    borrowClicked.value = false // 借阅失败，允许重新点击
     ElMessage.error('借阅失败')
     console.error(err)
   }

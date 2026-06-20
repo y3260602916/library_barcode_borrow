@@ -5,7 +5,6 @@
   <!-- 结果映射 -->
   <resultMap id="BaseResultMap" type="com.campus.libraryborrowbackend.entity.ScanRecord">
     <id column="scan_id" jdbcType="INTEGER" property="scanId" />
-    <result column="img_path" jdbcType="VARCHAR" property="imgPath" />
     <result column="scan_barcode" jdbcType="VARCHAR" property="scanBarcode" />
     <result column="scan_time" jdbcType="TIMESTAMP" property="scanTime" />
     <result column="result" jdbcType="VARCHAR" property="result" />
@@ -13,7 +12,7 @@
 
   <!-- 基础字段列表 -->
   <sql id="Base_Column_List">
-    scan_id, img_path, scan_barcode, scan_time, result
+    scan_id, scan_barcode, scan_time, result
   </sql>
 
   <!-- Example 动态 Where 子句 -->
@@ -113,7 +112,7 @@
 
   <insert id="insert" parameterType="com.campus.libraryborrowbackend.entity.ScanRecord">
     insert into scan_record (scan_id, img_path, scan_barcode, scan_time, result)
-    values (#{scanId,jdbcType=INTEGER}, #{imgPath,jdbcType=VARCHAR}, #{scanBarcode,jdbcType=VARCHAR},
+    values (#{scanId,jdbcType=INTEGER}, '', #{scanBarcode,jdbcType=VARCHAR},
             #{scanTime,jdbcType=TIMESTAMP}, #{result,jdbcType=VARCHAR})
   </insert>
 
@@ -121,14 +120,14 @@
     insert into scan_record
     <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="scanId != null">scan_id,</if>
-      <if test="imgPath != null">img_path,</if>
+      img_path,
       <if test="scanBarcode != null">scan_barcode,</if>
       <if test="scanTime != null">scan_time,</if>
       <if test="result != null">result,</if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="scanId != null">#{scanId,jdbcType=INTEGER},</if>
-      <if test="imgPath != null">#{imgPath,jdbcType=VARCHAR},</if>
+      '',
       <if test="scanBarcode != null">#{scanBarcode,jdbcType=VARCHAR},</if>
       <if test="scanTime != null">#{scanTime,jdbcType=TIMESTAMP},</if>
       <if test="result != null">#{result,jdbcType=VARCHAR},</if>
@@ -146,7 +145,6 @@
     update scan_record
     <set>
       <if test="row.scanId != null">scan_id = #{row.scanId,jdbcType=INTEGER},</if>
-      <if test="row.imgPath != null">img_path = #{row.imgPath,jdbcType=VARCHAR},</if>
       <if test="row.scanBarcode != null">scan_barcode = #{row.scanBarcode,jdbcType=VARCHAR},</if>
       <if test="row.scanTime != null">scan_time = #{row.scanTime,jdbcType=TIMESTAMP},</if>
       <if test="row.result != null">result = #{row.result,jdbcType=VARCHAR},</if>
@@ -159,7 +157,6 @@
   <update id="updateByExample" parameterType="map">
     update scan_record
     set scan_id = #{row.scanId,jdbcType=INTEGER},
-    img_path = #{row.imgPath,jdbcType=VARCHAR},
     scan_barcode = #{row.scanBarcode,jdbcType=VARCHAR},
     scan_time = #{row.scanTime,jdbcType=TIMESTAMP},
     result = #{row.result,jdbcType=VARCHAR}
@@ -171,7 +168,6 @@
   <update id="updateByPrimaryKeySelective" parameterType="com.campus.libraryborrowbackend.entity.ScanRecord">
     update scan_record
     <set>
-      <if test="imgPath != null">img_path = #{imgPath,jdbcType=VARCHAR},</if>
       <if test="scanBarcode != null">scan_barcode = #{scanBarcode,jdbcType=VARCHAR},</if>
       <if test="scanTime != null">scan_time = #{scanTime,jdbcType=TIMESTAMP},</if>
       <if test="result != null">result = #{result,jdbcType=VARCHAR},</if>
@@ -181,8 +177,7 @@
 
   <update id="updateByPrimaryKey" parameterType="com.campus.libraryborrowbackend.entity.ScanRecord">
     update scan_record
-    set img_path = #{imgPath,jdbcType=VARCHAR},
-        scan_barcode = #{scanBarcode,jdbcType=VARCHAR},
+    set scan_barcode = #{scanBarcode,jdbcType=VARCHAR},
         scan_time = #{scanTime,jdbcType=TIMESTAMP},
         result = #{result,jdbcType=VARCHAR}
     where scan_id = #{scanId,jdbcType=INTEGER}

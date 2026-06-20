@@ -5,8 +5,6 @@ import java.util.Date;
 public class ScanRecord {
     private Integer scanId;
 
-    private String imgPath;
-
     private String scanBarcode;
 
     private Date scanTime;
@@ -19,14 +17,6 @@ public class ScanRecord {
 
     public void setScanId(Integer scanId) {
         this.scanId = scanId;
-    }
-
-    public String getImgPath() {
-        return imgPath;
-    }
-
-    public void setImgPath(String imgPath) {
-        this.imgPath = imgPath == null ? null : imgPath.trim();
     }
 
     public String getScanBarcode() {

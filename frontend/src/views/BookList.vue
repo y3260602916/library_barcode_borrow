@@ -18,7 +18,6 @@
       >
         <el-option label="计算机" value="计算机" />
         <el-option label="文学" value="文学" />
-        <el-option label="文学类" value="文学类" />
         <el-option label="科幻" value="科幻" />
         <el-option label="测试类" value="测试类" />
       </el-select>

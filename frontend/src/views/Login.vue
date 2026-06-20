@@ -68,7 +68,7 @@
             <p>演示账号</p>
             <div class="demo-cards">
               <div class="demo-card" @click="fillDemo('student')">
-                <span>📚 学生</span>
+                <span>📚 师生</span>
                 <span class="demo-account">2026001 / 123456</span>
               </div>
               <div class="demo-card" @click="fillDemo('admin')">

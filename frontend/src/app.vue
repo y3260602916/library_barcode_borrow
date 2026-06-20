@@ -21,7 +21,7 @@
       <div class="user-info">
         <el-avatar :size="36" :icon="UserFilled" class="avatar" />
         <span class="user-name">{{ userInfo.userName }}</span>
-        <span class="user-badge student">学生</span>
+        <span class="user-badge student">师生</span>
       </div>
       <div class="nav-menu">
         <router-link to="/ocr" class="nav-item" :class="{ active: $route.path === '/ocr' }">
