@@ -1,7 +1,10 @@
-# 后端配置
-application*.yml
-application*.yaml
-application*.properties
+# 后端配置（仅忽略真实配置文件，保留 *.example 模板）
+application.yml
+application.yaml
+application.properties
+application-*.yml
+application-*.yaml
+application-*.properties
 *.env
 
 # 后端上传图片目录

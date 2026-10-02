@@ -1,121 +1,66 @@
 # 智慧图书馆借阅系统
 
-基于 Spring Boot + Vue3 的智慧图书馆借阅管理系统，支持扫码借阅、库存管理、逾期提醒等功能。
+基于 Spring Boot + Vue3 的校园图书馆借阅管理系统，集成了条码 OCR 识别和大模型图书推荐功能。
 
-## 🏗️ 技术栈
+## 功能特性
 
-### 后端技术
-- **框架**: Spring Boot 2.6.13
-- **数据库**: MySQL 8.0+
-- **ORM**: MyBatis Plus
-- **语言**: Java 8
+### 用户端
+- 用户登录/注册
+- 图书列表查询
+- 扫码借阅 / 扫码归还
+- 借阅记录查看
+- AI 图书推荐
 
-### 前端技术
-- **框架**: Vue 3 + TypeScript
-- **UI 组件**: Element Plus
-- **路由**: Vue Router
-- **构建工具**: Vite
-- **图标库**: Element Plus Icons
+### 管理员端
+- 用户管理
+- 图书库存管理
+- 借阅记录管理
+- 出入库管理
+- 借阅统计与数据看板
 
-### AI 模块
-- **语言**: Python 3.9+
-- **OCR 识别**: 基于深度学习的条形码识别
+## 技术栈
 
-## 📦 依赖列表
+| 模块 | 技术 |
+|------|------|
+| 后端 | Spring Boot 2.6 + MyBatis + MySQL 8 |
+| 前端 | Vue 3 + Vite + Element Plus + ECharts |
+| AI 模块 | Python 3.9 + OpenCV + pyzbar + 百度OCR + 通义千问 |
 
-### 前端依赖
-
-**生产依赖：**
-| 依赖名称 | 版本 | 用途 |
-|---------|------|------|
-| `vue` | ^3.3.8 | Vue 3 核心框架 |
-| `vue-router` | ^4.6.4 | Vue 路由管理 |
-| `element-plus` | ^2.4.4 | Element Plus UI 组件库 |
-| `@element-plus/icons-vue` | ^2.3.2 | Element Plus 图标库 |
-| `axios` | ^1.6.0 | HTTP 请求库 |
-| `echarts` | ^5.4.3 | 图表可视化库 |
-
-**开发依赖：**
-| 依赖名称 | 版本 | 用途 |
-|---------|------|------|
-| `vite` | ^4.4.9 | Vite 构建工具 |
-| `@vitejs/plugin-vue` | ^4.4.0 | Vite Vue 插件 |
-
-### 后端依赖
-
-| 依赖名称 | 版本 | 用途 |
-|---------|------|------|
-| `spring-boot-starter-web` | 2.6.13 | Spring Boot Web 支持 |
-| `mybatis-spring-boot-starter` | 2.2.2 | MyBatis ORM 整合 |
-| `mysql-connector-j` | 8.0.31 | MySQL 数据库驱动 |
-| `lombok` | - | 简化 Java 代码 |
-| `fastjson2` | 2.0.52 | JSON 序列化/反序列化 |
-| `spring-boot-starter-validation` | - | 参数校验 |
-
-## ✨ 功能特性
-
-### 用户端功能
-- [x] 用户登录/注册
-- [x] 图书列表查询
-- [x] 扫码借阅图书
-- [x] 借阅记录查看（倒序显示）
-- [x] 扫码归还图书
-
-### 管理员端功能
-- [x] 用户管理（增删改查）
-- [x] 图书库存管理（分类查询、库存调整）
-- [x] 借阅管理（全馆借阅记录、管理员代还书）
-- [x] 出入库管理
-- [x] 统计分析
-
-## 📁 项目结构
+## 项目结构
 
 ```
 library_barcode_borrow/
-├── ai-model/              # AI 模块（OCR识别）
-│   ├── __pycache__/
-│   ├── img/
-│   ├── ai_recommend.py
-│   ├── ocr_api.py
-│   └── main.py
-├── backend/               # Spring Boot后端
+├── ai-model/              # AI 模块（条码识别 + 图书推荐）
+│   ├── main.py            # 入口脚本
+│   ├── ocr_api.py         # 条码识别（百度OCR + 本地pyzbar双引擎）
+│   ├── ai_recommend.py    # 通义千问图书推荐
+│   ├── image_preprocess.py# 图片灰度预处理
+│   ├── config.py          # API密钥配置（需自行填入）
+│   └── requirements.txt   # Python 依赖
+├── backend/               # Spring Boot 后端
 │   └── src/main/
 │       ├── java/com/campus/libraryborrowbackend/
-│       │   ├── controller/
-│       │   ├── service/
-│       │   ├── mapper/
-│       │   ├── entity/
-│       │   └── config/
 │       └── resources/
 │           ├── mapper/
-│           └── application.properties
-├── frontend/              # Vue前端
-│   ├── src/
-│   │   ├── views/
-│   │   ├── router/
-│   │   ├── styles/
-│   │   └── utils/
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.js
+│           └── application.example.properties  # 配置模板
+├── frontend/              # Vue3 前端
 ├── database/              # 数据库脚本
 │   ├── library_db.sql
 │   └── 数据库设计说明.md
 └── readme.md
 ```
 
-## 🛠️ 环境要求
+## 环境要求
 
 - JDK 8+
 - Maven 3.8+
 - Node.js 16+
 - MySQL 8.0+
+- Python 3.9+
 
-## 🚀 快速开始
+## 快速开始
 
-### 1. 数据库配置
-
-创建数据库并执行初始化脚本：
+### 1. 数据库初始化
 
 ```sql
 CREATE DATABASE IF NOT EXISTS library_db DEFAULT CHARACTER SET utf8mb4;
@@ -123,39 +68,55 @@ USE library_db;
 SOURCE database/library_db.sql;
 ```
 
-### 2. 后端启动
+### 2. 后端配置与启动
 
-```bash
-cd backend
-mvn spring-boot:run
-```
+1. 复制配置模板：
+   ```bash
+   cp backend/src/main/resources/application.example.properties backend/src/main/resources/application.properties
+   ```
+2. 修改 `application.properties` 中的数据库密码和 Python 路径。
+3. 启动后端：
+   ```bash
+   cd backend
+   mvn spring-boot:run
+   ```
+   后端运行在 `http://localhost:8080`
 
-后端服务默认运行在 `http://localhost:8080`
+### 3. AI 模块配置与依赖
 
-### 3. 前端启动
+1. 安装 Python 依赖：
+   ```bash
+   cd ai-model
+   pip install -r requirements.txt
+   ```
+2. 修改 `ai-model/config.py`，填入百度智能云和百炼（通义千问）的 API 密钥。
+3. 后端通过 `PythonUtil` 以子进程方式调用 `main.py`，无需单独启动 AI 服务。
+
+### 4. 前端启动
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+前端运行在 `http://localhost:5173`
 
-前端服务默认运行在 `http://localhost:5173`
+## 演示账号
 
-## 📱 演示账号
+| 角色 | 用户名 | 密码 |
+|------|--------|------|
+| 管理员 | admin | admin123 |
+| 用户 | zhangsan | 123456 |
 
-### 管理员账号
-- 用户名：`admin`
-- 密码：`admin123`
+## 条码识别说明
 
-### 用户账号
-- 用户名：`zhangsan`
-- 密码：`123456`
+条码识别采用双引擎兜底策略：
+1. 优先调用百度云 OCR API；
+2. 若调用失败，降级到本地 `pyzbar` 识别；
+3. 本地识别会尝试多种图像预处理（高斯模糊、二值化、OTSU、自适应阈值等）和多种条码格式。
 
-## ⚠️ 注意事项
+## 注意事项
 
-1. **数据库配置**: 启动前请确保 `application.properties` 中的数据库连接信息正确
-2. **文件上传路径**: 图片上传路径配置为 `D:/library_barcode_borrow/backend/upload/`
-3. **OCR服务**: AI模块为可选组件，如需使用OCR功能，请启动Python服务
-
-
+1. `config.py` 中的 API 密钥需自行申请填入，仓库中为占位符。
+2. `application.properties` 已被 `.gitignore` 忽略，不会提交到仓库。
+3. 图片上传路径默认为 `backend/upload/`，可根据需要调整。
