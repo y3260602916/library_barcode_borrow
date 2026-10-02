@@ -4,6 +4,9 @@ application*.yaml
 application*.properties
 *.env
 
+# AI 模块密钥配置（含真实 API Key，请勿提交）
+ai-model/config.py
+
 # 后端上传图片目录
 backend/*/upload/
 
@@ -41,3 +44,8 @@ logs/
 Thumbs.db
 
 .vscode/
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
